@@ -26,6 +26,7 @@
 #include "leg_ctrl.h"
 #include "hall.h"
 #include "version.h"
+#include "tih.h"
 
 #include "settings.h" //major config defines, sys-service, hall, etc
 

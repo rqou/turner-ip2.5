@@ -42,10 +42,12 @@ def main():
     right_throt = 0
 
     print "Go!"
+    i = 0
 
     while True:
         sleep(0.10)
-        sendEcho('Hello World')
+        sendEcho('hi')
+        i = i+1
         #xb_send(shared.xb,shared.DEST_ADDR,0,command.WHO_AM_I,'')
     # Print blank space, we'll use stdout.write to display throttle vals here
     #sys.stdout.write(" "*60 + "\r")

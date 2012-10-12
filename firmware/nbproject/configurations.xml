@@ -41,6 +41,7 @@
         <itemPath>../lib/tail_ctrl.h</itemPath>
         <itemPath>../lib/sys_service.h</itemPath>
         <itemPath>../lib/hall.h</itemPath>
+        <itemPath>../../imageproc-lib/tih.h</itemPath>
       </logicalFolder>
       <itemPath>source/cmd.h</itemPath>
       <itemPath>source/settings.h</itemPath>
@@ -72,6 +73,11 @@
         <itemPath>../../imageproc-lib/gyro.c</itemPath>
         <itemPath>../../imageproc-lib/pid_hw.c</itemPath>
         <itemPath>../../imageproc-lib/pid.c</itemPath>
+        <itemPath>../../imageproc-lib/spi.h</itemPath>
+        <itemPath>../../imageproc-lib/spi_controller.c</itemPath>
+        <itemPath>../../imageproc-lib/spi_controller.h</itemPath>
+        <itemPath>../../imageproc-lib/mpu6000.c</itemPath>
+        <itemPath>../../imageproc-lib/mpu6000.h</itemPath>
       </logicalFolder>
       <logicalFolder name="lib" displayName="lib" projectFiles="true">
         <itemPath>../../imageproc-lib/delay.s</itemPath>
@@ -88,16 +94,18 @@
         <itemPath>../lib/tail_ctrl.c</itemPath>
         <itemPath>../lib/sys_service.c</itemPath>
         <itemPath>../lib/hall.c</itemPath>
+        <itemPath>../../imageproc-lib/tih.c</itemPath>
       </logicalFolder>
       <itemPath>source/cmd.c</itemPath>
       <itemPath>source/main.c</itemPath>
-      <itemPath>version.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
                    projectFiles="false">
       <itemPath>Makefile</itemPath>
     </logicalFolder>
+    <itemPath>source/version-string.h</itemPath>
+    <itemPath>../../imageproc-lib/version.c</itemPath>
   </logicalFolder>
   <sourceRootList>
     <Elem>.</Elem>
@@ -109,9 +117,9 @@
         <developmentServer>localhost</developmentServer>
         <targetDevice>dsPIC33FJ128MC706A</targetDevice>
         <targetHeader></targetHeader>
-        <platformTool>ICD3PlatformTool</platformTool>
+        <platformTool>PICkit3PlatformTool</platformTool>
         <languageToolchain>XC16</languageToolchain>
-        <languageToolchainVersion>1.00</languageToolchainVersion>
+        <languageToolchainVersion></languageToolchainVersion>
         <platform>3</platform>
       </toolsSet>
       <compileType>
@@ -554,7 +562,7 @@
         <property key="oXC16glb-macros" value="PID_HARDWARE"/>
         <property key="output-file-format" value="elf"/>
       </C30Global>
-      <ICD3PlatformTool>
+      <PICkit3PlatformTool>
         <property key="ADC 1" value="true"/>
         <property key="ADC 2" value="true"/>
         <property key="AutoSelectMemRanges" value="auto"/>
@@ -577,7 +585,7 @@
         <property key="OUTPUT COMPARE 6" value="true"/>
         <property key="OUTPUT COMPARE 7" value="true"/>
         <property key="OUTPUT COMPARE 8" value="true"/>
-        <property key="PWM" value="true"/>
+        <property key="PWM" value="false"/>
         <property key="QEI" value="true"/>
         <property key="SPI 1" value="true"/>
         <property key="SPI 2" value="true"/>
@@ -596,15 +604,18 @@
         <property key="ToolFirmwareOption.UseLatestFirmware" value="true"/>
         <property key="UART 1" value="true"/>
         <property key="UART 2" value="true"/>
-        <property key="debugoptions.useswbreakpoints" value="false"/>
         <property key="hwtoolclock.frcindebug" value="false"/>
-        <property key="memories.eeprom" value="true"/>
-        <property key="memories.id" value="true"/>
+        <property key="memories.aux" value="false"/>
+        <property key="memories.eeprom" value="false"/>
+        <property key="memories.flashdata" value="true"/>
+        <property key="memories.id" value="false"/>
         <property key="memories.programmemory" value="true"/>
         <property key="memories.programmemory.end" value="0x157ff"/>
         <property key="memories.programmemory.start" value="0x0"/>
-        <property key="poweroptions.powerenable" value="false"/>
+        <property key="poweroptions.powerenable" value="true"/>
+        <property key="programmertogo.imagename" value=""/>
         <property key="programoptions.eraseb4program" value="true"/>
+        <property key="programoptions.pgmspeed" value="2"/>
         <property key="programoptions.preserveeeprom" value="false"/>
         <property key="programoptions.preserveprogramrange" value="false"/>
         <property key="programoptions.preserveprogramrange.end" value="0xff"/>
@@ -612,8 +623,8 @@
         <property key="programoptions.preserveuserid" value="false"/>
         <property key="programoptions.usehighvoltageonmclr" value="false"/>
         <property key="programoptions.uselvpprogramming" value="false"/>
-        <property key="voltagevalue" value="3.25"/>
-      </ICD3PlatformTool>
+        <property key="voltagevalue" value="3.375"/>
+      </PICkit3PlatformTool>
     </conf>
   </confs>
 </configurationDescriptor>
