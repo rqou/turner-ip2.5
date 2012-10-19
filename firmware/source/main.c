@@ -13,21 +13,18 @@
 #include "battery.h"
 #include "cmd.h"
 #include "radio.h"
-#include "xl.h"
-#include "gyro.h"
 #include "utils.h"
 #include "stopwatch.h"
 #include "motor_ctrl.h"
 #include "led.h"
 #include "dfmem.h"
-#include "leg_ctrl.h"
 #include "pid.h"
 #include "adc_pid.h"
 #include "steering.h"
 #include "telem.h"
 #include "hall.h"
-#include "tail_ctrl.h"
 #include "tih.h"
+#include "amsCtrl.h"
 
 #include <stdlib.h>
 
@@ -45,8 +42,14 @@ int main(void) {
     SetupClock();
     SwitchClocks();
     SetupPorts();
-    mpuSetup();
+    amsPIDSetup();
+//  mpuSetup();
+    amsCtrlSetGains(0,1000,00,00,0,0);
 
+    while(1){
+        amsCtrlSetInput(0,50);
+        amsCtrlPIDUpdate(0,10);
+    }
 
     
     LED_GREEN = 0;
@@ -80,7 +83,7 @@ int main(void) {
     //_LATG9 = 0;
 
     }
-    */
+   
 
 
     //testRadio();
@@ -170,7 +173,7 @@ int main(void) {
     //tiHSetFloat(3,99.0);
     //tiHSetFloat(4,99.0);
 
-*/
+
     
     LED_GREEN = 0;
     LED_RED = 0;
@@ -242,7 +245,7 @@ int main(void) {
             while(OSCCONbits.LOCK!=1);
     }
     //gyroWake();
-    }*/
+    }
 }
 
 
@@ -279,4 +282,5 @@ swatchSetup();
         cmdHandleRadioRxBuffer();
     }
     LED_RED = OFF;
+}*/
 }
