@@ -23,6 +23,7 @@
         <itemPath>../../imageproc-lib/pid_hw.h</itemPath>
         <itemPath>../../imageproc-lib/stopwatch.h</itemPath>
         <itemPath>../../imageproc-lib/pid.h</itemPath>
+        <itemPath>../../imageproc-lib/amsCtrl.h</itemPath>
       </logicalFolder>
       <logicalFolder name="lib" displayName="lib" projectFiles="true">
         <itemPath>../lib/adc_pid.h</itemPath>
@@ -78,6 +79,7 @@
         <itemPath>../../imageproc-lib/spi_controller.h</itemPath>
         <itemPath>../../imageproc-lib/mpu6000.c</itemPath>
         <itemPath>../../imageproc-lib/mpu6000.h</itemPath>
+        <itemPath>../../imageproc-lib/amsCtrl.c</itemPath>
       </logicalFolder>
       <logicalFolder name="lib" displayName="lib" projectFiles="true">
         <itemPath>../../imageproc-lib/delay.s</itemPath>
