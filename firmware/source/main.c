@@ -25,10 +25,13 @@
 #include "hall.h"
 #include "tih.h"
 #include "amsCtrl.h"
+#include "ams-enc.h"
 
 #include <stdlib.h>
 
 extern unsigned char id[4];
+extern ENCPOS encPos[NUM_ENC];
+extern pidObj amsPID[nPIDS];
 
 volatile unsigned long wakeTime;
 extern volatile char g_radio_duty_cycle;
@@ -43,15 +46,18 @@ int main(void) {
     SwitchClocks();
     SetupPorts();
     amsPIDSetup();
+    encSetup();
+    tiHSetup();
 //  mpuSetup();
-    amsCtrlSetGains(0,1000,00,00,0,0);
+//    amsCtrlSetGains(0,1000,00,00,0,0);
 
     while(1){
-        amsCtrlSetInput(0,50);
-        amsCtrlPIDUpdate(0,10);
+        amsGetPos(1);
+        amsCtrlSetInput(1, 2000);
+        amsCtrlPIDUpdate(1, encPos[1].calibPOS);
+        tiHSetDC(2, amsPID[1].output);
     }
 
-    
     LED_GREEN = 0;
     LED_RED = 1;
     LED_YELLOW = 1;

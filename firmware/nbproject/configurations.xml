@@ -25,6 +25,7 @@
         <itemPath>../../imageproc-lib/pid.h</itemPath>
         <itemPath>../../imageproc-lib/amsCtrl.h</itemPath>
         <itemPath>../../imageproc-lib/ams-enc.h</itemPath>
+        <itemPath>../../imageproc-lib/tih.h</itemPath>
       </logicalFolder>
       <logicalFolder name="lib" displayName="lib" projectFiles="true">
         <itemPath>../lib/adc_pid.h</itemPath>
@@ -43,7 +44,6 @@
         <itemPath>../lib/tail_ctrl.h</itemPath>
         <itemPath>../lib/sys_service.h</itemPath>
         <itemPath>../lib/hall.h</itemPath>
-        <itemPath>../../imageproc-lib/tih.h</itemPath>
       </logicalFolder>
       <itemPath>source/cmd.h</itemPath>
       <itemPath>source/settings.h</itemPath>
@@ -82,6 +82,7 @@
         <itemPath>../../imageproc-lib/mpu6000.h</itemPath>
         <itemPath>../../imageproc-lib/amsCtrl.c</itemPath>
         <itemPath>../../imageproc-lib/ams-enc.c</itemPath>
+        <itemPath>../../imageproc-lib/tih.c</itemPath>
       </logicalFolder>
       <logicalFolder name="lib" displayName="lib" projectFiles="true">
         <itemPath>../../imageproc-lib/delay.s</itemPath>
@@ -98,7 +99,6 @@
         <itemPath>../lib/tail_ctrl.c</itemPath>
         <itemPath>../lib/sys_service.c</itemPath>
         <itemPath>../lib/hall.c</itemPath>
-        <itemPath>../../imageproc-lib/tih.c</itemPath>
       </logicalFolder>
       <itemPath>source/cmd.c</itemPath>
       <itemPath>source/main.c</itemPath>
@@ -590,7 +590,7 @@
         <property key="OUTPUT COMPARE 6" value="true"/>
         <property key="OUTPUT COMPARE 7" value="true"/>
         <property key="OUTPUT COMPARE 8" value="true"/>
-        <property key="PWM" value="false"/>
+        <property key="PWM" value="true"/>
         <property key="QEI" value="true"/>
         <property key="SPI 1" value="true"/>
         <property key="SPI 2" value="true"/>
@@ -611,6 +611,8 @@
         <property key="UART 2" value="true"/>
         <property key="hwtoolclock.frcindebug" value="false"/>
         <property key="memories.aux" value="false"/>
+        <property key="memories.bootflash" value="false"/>
+        <property key="memories.configurationmemory" value="false"/>
         <property key="memories.eeprom" value="false"/>
         <property key="memories.flashdata" value="true"/>
         <property key="memories.id" value="false"/>
