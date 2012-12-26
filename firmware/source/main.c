@@ -26,6 +26,7 @@
 #include "tih.h"
 #include "amsCtrl.h"
 #include "ams-enc.h"
+#include "blink.h"
 
 #include <stdlib.h>
 
@@ -41,23 +42,43 @@ extern byte phyReadReg(byte addr);
 int dcCounter;
 
 int main(void) {
-
+    int i;
     SetupClock();
     SwitchClocks();
+    swatchSetup();
     SetupPorts();
     amsPIDSetup();
     encSetup();
     tiHSetup();
+    blink_leds(5,1000); // blink LED 5 times
 //  mpuSetup();
 //    amsCtrlSetGains(0,1000,00,00,0,0);
+// test first two channels
+ /*   tiHSetDC(1, 0x500);
+    blink_leds(4,300);
+      tiHSetDC(1, 0);
+      blink_leds(1,2000);
+       tiHSetDC(2, 0x500);
+    blink_leds(4,300);
+      tiHSetDC(2, 0); */
 
-    while(1){
+    // get initial set point
+    amsGetPos(1);
+    encPos[1].offset = encPos[1].POS;
+    amsCtrlSetInput(1, 0x2000);   // set target position to mid-range
+
+ //   while(1){
+    for(i = 0; i< 20000; i++)
+    {
         amsGetPos(1);
-        amsCtrlSetInput(1, 2000);
+  //      amsCtrlSetInput(1, 2000);
         amsCtrlPIDUpdate(1, encPos[1].calibPOS);
-        tiHSetDC(2, amsPID[1].output);
+        tiHSetDC(1, amsPID[1].output);
+	swatchDelayUs(200); /* wait 100 us */
     }
-
+    tiHSetDC(1,0);
+    tiHSetDC(2,0);  // * hope this stops run
+    while(1) {} // hang here until reset
     LED_GREEN = 0;
     LED_RED = 1;
     LED_YELLOW = 1;
