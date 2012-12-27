@@ -365,7 +365,7 @@ enable=0
 transport=0
 format=0
 [CUSTOM_BUILD]
-Pre-Build=python ..\..\imageproc-lib\version.py APULLIN-OCTOROACH-MASTER;PID-HARD;STEER-HARD
+Pre-Build=python ..\..\imageproc-lib\version.py Turner-IP2.5;TI-Hbridge;Hall Effect
 Pre-BuildEnabled=1
 Post-Build=
 Post-BuildEnabled=1
