@@ -75,6 +75,7 @@ class TestSuite():
             self.conn = Serial(dev_name, baudrate=baud_rate, rtscts=True)
             if self.conn.isOpen():
                 self.radio = XBee(self.conn, callback=self.receive)
+                print "Radio opened:" + str(dev_name)
                 pass
             else:
                 raise SerialException('')
@@ -102,12 +103,18 @@ class TestSuite():
         self.last_packet = packet
         rf_data = packet.get('rf_data')
         typeID = ord(rf_data[1])
+        print "got packet " + str(typeID)
         if typeID == kTestAccelCmd or typeID == kTestGyroCmd:
             print unpack('3h', rf_data[2:])
         elif typeID == kTestDFlashCmd:
             print ''.join(rf_data[2:])
+#            print rf_data[2:]
+#            print map(ord,rf_data[2:])
+            print map(str,rf_data[2:])
         elif typeID == kTestMotorCmd:
             print unpack('50H', rf_data[2:])
+        elif typeID == kTestRadioCmd:
+            self.print_packet(self.last_packet)
 
     def test_radio(self):
         '''
@@ -120,12 +127,14 @@ class TestSuite():
         '''
 
         header = chr(kStatusUnused) + chr(kTestRadioCmd)
-        for i in range(1, 4):
-            data_out = header + ''.join([chr(datum) for datum in range((i-1)*10,i*10)])
+        for i in range(1, 2):
+            data_out = header + ''.join([str(datum) for datum in range((i-1)*10,i*10)])
             print("\nTransmitting packet " + str(i) + "...")
+            print map(str,data_out[2:])
+            print data_out[2:]
             if(self.check_conn()):
                 self.radio.tx(dest_addr=self.dest_addr, data=data_out)
-                time.sleep(0.2)
+                time.sleep(1.0) # possible over run of packets?
                 self.print_packet(self.last_packet)
             time.sleep(1)
 
@@ -242,7 +251,14 @@ class TestSuite():
             rf_data = packet.get('rf_data')
             print("Status Field: " + str(ord(rf_data[0])))
             print("Type Field: " + str(ord(rf_data[1])))
-            print("Payload Data: " + ''.join([str(ord(i)) for i in rf_data[2:]]))
+  #          print("Payload Data: " + ''.join([str(ord(i)) for i in rf_data[2:]]))
+            print "Payload Data: " 
+            print map(ord,rf_data[2:])
+  #          print("Payload" + rf_data[2:])
+            print map(str,rf_data[2:])
+  #          print(map(chr,rf_data))
+  
+ 
 
     def __del__(self):
         '''

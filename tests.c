@@ -58,7 +58,7 @@
 #include "dfmem.h"
 #include <string.h>
 #include <stdlib.h>
-#include <radio_settings.h>
+#include "radio_settings.h"
 
 volatile Queue fun_queue;
 

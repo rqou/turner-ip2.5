@@ -43,11 +43,13 @@ import test_suite
 
 
 #RADIO_DEV_NAME  = '/dev/tty.usbserial-*' or 'COMx'
-#RADIO_DEV_NAME  = 'COM1'
-RADIO_DEV_NAME = '/dev/ttyUSB0'
+RADIO_DEV_NAME  = 'COM4'
+#RADIO_DEV_NAME = '/dev/ttyUSB0'
 
-BS_BAUDRATE = 57600
-DEST_ADDR = '\x21\x12'
+#BS_BAUDRATE = 57600
+BS_BAUDRATE = 230400
+#DEST_ADDR = '\x21\x12'
+DEST_ADDR = '\x20\x52'
 
 if __name__ == '__main__':
     try:
@@ -55,8 +57,8 @@ if __name__ == '__main__':
                                   baud_rate=BS_BAUDRATE, \
                                   dest_addr=DEST_ADDR  )
 
-        #print('\nI: Testing radio communication:')
-        #ts.test_radio()
+        print('\nI: Testing radio communication:')
+        ts.test_radio()
         
         while True:
             raw_input("Press any key to continue...")

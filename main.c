@@ -79,7 +79,10 @@ int main() {
             test = queuePop(fun_queue);
             rx_payload = macGetPayload(test->packet);
             tf = test->tf;
-            (*tf)(payGetType(rx_payload), payGetStatus(rx_payload), payGetDataLength(rx_payload), payGetData(rx_payload));
+            (*tf)(payGetType(rx_payload), 
+                    payGetStatus(rx_payload), 
+			  payGetDataLength(rx_payload), 
+                    payGetData(rx_payload));
             radioReturnPacket(test->packet);
             free(test);
         }
