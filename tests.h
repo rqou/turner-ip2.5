@@ -7,6 +7,7 @@
 #include "queue.h"
 #include "payload_queue.h"
 #include "mac_packet.h"
+#include "mpu6000.h"
 
 #define RX_QUEUE_LEN    6
 #define TX_QUEUE_LEN    12
@@ -22,6 +23,7 @@ extern volatile PayQueue rx_pay_queue;
 extern unsigned char argument, regaddr, regvalue;
 extern unsigned int i, j, rowcnt, imcnt;
 extern volatile Queue fun_queue;
+// extern mpuObj mpu_data;
 
 // A function pointer type definition for all testing functions
 // All testing functions must take 3 char args and one char array

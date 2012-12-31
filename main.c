@@ -26,7 +26,6 @@
 #include "tests.h" // TODO (fgb) : define/includes need to live elsewhere
 #include "dfmem.h"
 #include "interrupts.h"
-#include "mpu6000.h"
 #include "sclock.h"
 #include <stdlib.h>
 

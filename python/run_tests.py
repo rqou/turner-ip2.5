@@ -61,10 +61,11 @@ if __name__ == '__main__':
         ts.test_radio()
         
         while True:
-            raw_input("Press any key to continue...")
-            print('\nI: Testing flash memory:\n')
+            raw_input("II. Press any key to test gyro...")
+            ts.test_gyro(1)
+            raw_input("\n I: Press any key to test flash memory...")
             ts.test_dflash()
-            
+   
             #print('\nI: Testing radio communication:')
             #ts.test_radio()
     

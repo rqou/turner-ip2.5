@@ -53,7 +53,7 @@
 #include "utils.h"
 #include "radio.h"
 #include "pwm.h"
-#include "gyro.h"
+//#include "mpu6000.h"
 #include "xl.h"
 #include "dfmem.h"
 #include <string.h>
@@ -61,6 +61,7 @@
 #include "radio_settings.h"
 
 volatile Queue fun_queue;
+extern mpuObj mpu_data;
 
 /*****************************************************************************
 * Function Name : test_radio
@@ -109,21 +110,30 @@ unsigned char test_radio(unsigned char type, unsigned char status,\
 unsigned char test_gyro(unsigned char type, unsigned char status,\
                          unsigned char length, unsigned char* data)
 {
-    /*
+    
     int i;
-
+    MacPacket packet;
     Payload pld;
-    WordVal dest_addr;
-    dest_addr = radioGetDestAddr();
-    for(i=0; i < data[0]; i++){
-        pld = payCreateEmpty(6);
-        paySetType(pld, type);
-        paySetStatus(pld, 0);
-        paySetData(pld, 6, gyroReadXYZ());
-        radioSendPayload(dest_addr, pld);
-        delay_ms(TEST_PACKET_INTERVAL_MS);
-    }
-    */
+// refresh MPU reading
+	mpuUpdate();
+
+    // Get a new packet from the pool
+    packet = radioRequestPacket(sizeof(mpu_data));
+    if(packet == NULL) return 0;
+    macSetDestAddr(packet, RADIO_DEST_ADDR);
+
+   // Prepare the payload
+    pld = packet->payload;
+    paySetStatus(pld, STATUS_UNUSED);
+    paySetType(pld, type);
+ 
+// Read gyro data into the payload
+
+	memcpy(payGetData(pld),  & mpu_data, sizeof(mpu_data)); // copy gyro data to packet
+
+   // Enqueue the packet for broadcast
+    while(!radioEnqueueTxPacket(packet));
+  
     return 1; //success
 }
 

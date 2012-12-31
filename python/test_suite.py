@@ -103,18 +103,18 @@ class TestSuite():
         self.last_packet = packet
         rf_data = packet.get('rf_data')
         typeID = ord(rf_data[1])
-        print "got packet " + str(typeID)
+        print "got packet type " + str(typeID)
         if typeID == kTestAccelCmd or typeID == kTestGyroCmd:
-            print unpack('3h', rf_data[2:])
+            self.print_gyro(self.last_packet)
         elif typeID == kTestDFlashCmd:
             print ''.join(rf_data[2:])
 #            print rf_data[2:]
 #            print map(ord,rf_data[2:])
-            print map(str,rf_data[2:])
+#            print map(str,rf_data[2:])
         elif typeID == kTestMotorCmd:
             print unpack('50H', rf_data[2:])
-        elif typeID == kTestRadioCmd:
-            self.print_packet(self.last_packet)
+#        elif typeID == kTestRadioCmd:
+#            self.print_packet(self.last_packet)
 
     def test_radio(self):
         '''
@@ -127,14 +127,14 @@ class TestSuite():
         '''
 
         header = chr(kStatusUnused) + chr(kTestRadioCmd)
-        for i in range(1, 2):
+        for i in range(1, 3):
             data_out = header + ''.join([str(datum) for datum in range((i-1)*10,i*10)])
             print("\nTransmitting packet " + str(i) + "...")
             print map(str,data_out[2:])
             print data_out[2:]
             if(self.check_conn()):
                 self.radio.tx(dest_addr=self.dest_addr, data=data_out)
-                time.sleep(1.0) # possible over run of packets?
+                time.sleep(0.1) # possible over run of packets?
                 self.print_packet(self.last_packet)
             time.sleep(1)
 
@@ -257,8 +257,16 @@ class TestSuite():
   #          print("Payload" + rf_data[2:])
             print map(str,rf_data[2:])
   #          print(map(chr,rf_data))
-  
- 
+
+# gyro packet :  int xl_data[3]; int gyro_data[3]; int temp;
+    def print_gyro(self, packet):
+        rf_data = packet.get('rf_data')
+#        print "length of data " + str(len(rf_data[2:]))
+        print "xl data:" + str(map(hex,unpack('3h',rf_data[2:8])))
+        print "gyro data:" + str(map(hex,unpack('3h',rf_data[8:14])))
+        print "temperature:" + str(map(hex,unpack('1h',rf_data[14:16])))
+#        print map(hex,unpack('7h',rf_data[2:]))
+     
 
     def __del__(self):
         '''
