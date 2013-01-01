@@ -28,6 +28,8 @@
 #include "interrupts.h"
 #include "sclock.h"
 #include "ams-enc.h"
+#include "tih.h"
+#include "blink.h"
 #include <stdlib.h>
 
 Payload rx_payload;
@@ -54,6 +56,7 @@ int main() {
     mpuSetup();
     amsHallSetup();
     dfmemSetup();
+    tiHSetup();   // set up H bridge drivers
 
     // Radio setup
     radioInit(RADIO_RXPQ_MAX_SIZE, RADIO_TXPQ_MAX_SIZE);
@@ -62,7 +65,7 @@ int main() {
     radioSetSrcPanID(RADIO_PAN_ID);
     setupTimer6(RADIO_FCY); // Radio and buffer loop timer
 
-
+	blink_leds(4,500); // blink LEDs 4 times at half sec
     char j;
     for(j=0; j<3; j++){
         LED_2 = ON;

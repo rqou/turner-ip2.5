@@ -67,6 +67,11 @@ if __name__ == '__main__':
             ts.test_dflash()
             raw_input("\n III: Press any key to test Hall angle sensor ...")
             ts.test_hall(1)
+            raw_input("\n IV: Press any key to test motor drive ...")
+            ts.test_motor(1,1000)
+            ts.test_motor(1,-1000)
+            ts.test_motor(2,1000)
+            ts.test_motor(2,-1000)
             #print('\nI: Testing radio communication:')
             #ts.test_radio()
     

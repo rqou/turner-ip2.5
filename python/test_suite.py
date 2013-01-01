@@ -4,6 +4,7 @@ Author: Aaron M. Hoover
 Date: 2011-04-16
 Description: A single class representing the whole test suite for testing all
 functionality of ImageProc/CrawlerProc.
+modified by R. Fearing Jan 2013 to use IP2.5
 '''
 
 import sys
@@ -15,7 +16,7 @@ from serial import Serial, SerialException
 import numpy as np
 
 from xbee import XBee
-from struct import unpack
+from struct import unpack, pack
 
 kTimeout = 5
 kRtscts = 0
@@ -113,7 +114,7 @@ class TestSuite():
 #            print map(ord,rf_data[2:])
 #            print map(str,rf_data[2:])
         elif typeID == kTestMotorCmd:
-            print unpack('50H', rf_data[2:])
+            print ''.join(rf_data[2:])
         elif typeID == kTestHallCmd:
             self.print_hall(self.last_packet)
 #        elif typeID == kTestRadioCmd:
@@ -140,6 +141,7 @@ class TestSuite():
                 time.sleep(0.1) # possible over run of packets?
                 self.print_packet(self.last_packet)
             time.sleep(1)
+
 ############
     def test_gyro(self, num_test_packets):
         '''
@@ -150,6 +152,7 @@ class TestSuite():
         if self.check_conn():
             self.radio.tx(dest_addr=self.dest_addr, data=data_out)
             time.sleep(num_test_packets * 0.5)
+
 #################
     def test_accel(self, num_test_packets):
         '''
@@ -162,6 +165,7 @@ class TestSuite():
         if(self.check_conn()):
             self.radio.tx(dest_addr=self.dest_addr, data=data_out)
             time.sleep(num_test_packets * 0.5)
+
 ###############
     def test_hall(self, num_test_packets):
         '''
@@ -173,51 +177,43 @@ class TestSuite():
             self.radio.tx(dest_addr=self.dest_addr, data=data_out)
             time.sleep(num_test_packets * 0.5)
 
+################
     def test_dflash(self):
         '''
         Description:
             Read out a set of strings that have been written to and read from
             memory.
         '''
-
         data_out = chr(kStatusUnused) + chr(kTestDFlashCmd)
         if(self.check_conn()):
             self.radio.tx(dest_addr=self.dest_addr, data=data_out)
             time.sleep(1)
-
-    def test_motor(self, motor_id, time, duty_cycle, direction, return_emf=0):
+            
+####################
+    def test_motor(self, motor_id,duty_cycle):
         '''
         Description:
             Turn on a motor.
         Parameters:
             motor_id    : The motor number to turn on
             time        : The amount of time to turn the motor on for (in
-                          seconds)
+                          milliseconds)
             duty_cycle  : The duty cycle of the PWM signal used to control the
-                          motor in percent (0 - 100)
+                          motor in -4000 < dc < 4000
             direction   : The direction to spin the motor. There are *three*
                           options for this parameter. 0 - reverse, 1 - forward,
                           2 high impedance motor controller output = braking
             return_emf  : Send the back emf readings over the radio channel.
         '''
-
-        if direction >= 2:
-            direction = 2
-        elif direction <= 0:
-            direction = 0
-        else:
-            direction = 1
-
-
-        if return_emf != 1:
-            return_emf = 0
-
-        data_out = chr(kStatusUnused) + chr(kTestMotorCmd) + chr(motor_id) + \
-                   chr(time) + chr(duty_cycle) + chr(direction) + \
-                   chr(return_emf)
+        duration = 500; # time in milliseconds
+        data_out = chr(kStatusUnused) + chr(kTestMotorCmd) + \
+                   pack('3h', motor_id, duration, duty_cycle)
+        print "testing motor " + str(motor_id)           
         if(self.check_conn()):
             self.radio.tx(dest_addr=self.dest_addr, data=data_out)
-
+            time.sleep(1)
+            
+###########
     def test_sma(self, chan_id, time, duty_cycle):
         '''
         Description:

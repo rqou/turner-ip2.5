@@ -60,6 +60,8 @@
 #include <stdlib.h>
 #include "radio_settings.h"
 #include "ams-enc.h"
+#include "stopwatch.h"
+#include "tih.h"
 
 volatile Queue fun_queue;
 extern mpuObj mpu_data;
@@ -164,7 +166,7 @@ unsigned char test_hall(unsigned char type, unsigned char status,\
     paySetType(pld, type);
  
 // Read Hall data into the payload
-	memcpy(payGetData(pld),  & encPos, sizeof(encPos)); // copy gyro data to packet
+	memcpy(payGetData(pld),  & encPos, sizeof(encPos)); // copy Hall data to packet
 
    // Enqueue the packet for broadcast
     while(!radioEnqueueTxPacket(packet));
@@ -187,36 +189,28 @@ unsigned char test_hall(unsigned char type, unsigned char status,\
 *****************************************************************************/
 unsigned char test_accel(unsigned char type, unsigned char status,\
                          unsigned char length, unsigned char* data)
-{
-    /*
+{    /*
     MacPacket packet;
     Payload pld;
-
     for(int i=0; i < data[0]; i++) {
         // Get a new packet from the pool
         packet = radioRequestPacket(6);
         if(packet == NULL) return;
         macSetDestAddr(packet, RADIO_DEST_ADDR);
-
         // Toggle LED
         LED_1 = ~LED_1;
-
         // Fill the payload
         pld = packet->payload;
         paySetType(pld, type);
         paySetStatus(pld, 0);
         paySetData(pld, 6, xlReadXYZ());
-
         // Enqueue the packet for broadcast
         while(!radioEnqueueTxPacket(packet));
-
         // Wait around for a while
         delay_ms(TEST_PACKET_INTERVAL_MS);
     }
-
     LED_1 = OFF;
     */
-
     return 1; //success
 }
 
@@ -336,80 +330,46 @@ unsigned char test_dflash(unsigned char type, unsigned char status,
 *                 status - Status field of the motor test packet (not yet used)
 *                 length - The length of the payload data array
 *                 data - data[0] = motor number
-*                        data[1] = on time (secs)
-*                        data[1] = duty cycle (percent)
+*                        data[1:2] = on time (milli secs)
+*                        data[3:4] = duty cycle (percent)
 * Return Value  : success indicator - 0 for failed, 1 for succeeded
 *****************************************************************************/
 unsigned char test_motor(unsigned char type, unsigned char status, \
                           unsigned char length, unsigned char* data)
-{
-    /*
-    Payload pld;
-    WordVal dest_addr;
-    dest_addr = radioGetDestAddr();
+{ unsigned int motor_id; int on_time; int dutycycle;
+	char ack_string[40]="motor OK\n";
+	 MacPacket packet;
+   	 Payload pld;
 
-    intT emf;
+	 motor_id = (unsigned int) data[0];
+	 on_time = (unsigned long)( (data[3] << 8) + data[2]);
+	 dutycycle = (int)((data[5] << 8) + data[4]);
+	
+      tiHSetDC(motor_id, dutycycle);
+	swatchDelayMs(on_time);
+  	tiHSetDC(motor_id, 0);
+// send an ack packet back - could have data later...
+  // Get a new packet from the pool
+    packet = radioRequestPacket(sizeof(ack_string));
+    if(packet == NULL) return 0;
+    macSetDestAddr(packet, RADIO_DEST_ADDR);
 
-    unsigned char motor_id, on_time, duty_cycle, direction, return_emf;
-    unsigned char emf_data[100];
+   // Prepare the payload
+    pld = packet->payload;
+    paySetStatus(pld, STATUS_UNUSED);
+    paySetType(pld, type);
+ // Read message data into the payload
+	memcpy(payGetData(pld),  & ack_string, sizeof(ack_string)); // copy ack_string to packet
 
-    motor_id = data[0];
-    on_time = data[1];
-    //Duty cycle must be set to 100 - data[2] because the Freescale M17529 motor
-    //controller uses H/H inputs to set the high impedance output state.
-//    duty_cycle = 100 - data[2];
-    duty_cycle = data[2];
-    direction = data[3];
-    return_emf = data[4];
-
-    LED_1 = 1;
-
-    //Only accept valid motor_id numbers
-    if (motor_id != 1 && motor_id != 2){
-        LED_1 = 0;
-        return 0;
-    }
+   // Enqueue the packet for broadcast
+    while(!radioEnqueueTxPacket(packet));
+  
+      return 1; //success
+} 
 
 
-    set_motor_direction(motor_id, direction);
 
-    SetDCMCPWM(motor_id, (2 * (long)PTPERvalue * (long)duty_cycle)/100, 0);
-    int i,j,k;
-    for (i=0; i < on_time; i++){
-        if(return_emf){
-            //Sample EMF data every 10ms
-            for(j=0; j < 2; j++){
-                pld = payCreateEmpty(100);
-
-                for(k=0; k < 50; k++){
-                    AD1CON1bits.SAMP = 1;
-                    while(!AD1CON1bits.DONE);
-                    emf.i = ADC1BUF0 + 6;
-                    //emf.i = (ADC1BUF0 + motor_id - 1);
-                    emf_data[2*k] = emf.c[0];
-                    emf_data[2*k+1] = emf.c[1];
-                    delay_ms(10);
-                }
-
-                paySetType(pld, type);
-                paySetStatus(pld, 0);
-                paySetData(pld, 100, emf_data);
-                radioSendPayload(dest_addr, pld);
-            }
-        }else{
-            delay_ms(1000);
-        }
-    }
-    //Brake motor
-    set_motor_direction(motor_id, BRAKE);
-    SetDCMCPWM(motor_id, 0, 0);
-
-    LED_1 = 0;
-    */
-
-    return 1;
-}
-
+/**********************************/
 unsigned char test_sma(unsigned char type, unsigned char status, \
                           unsigned char length, unsigned char* data)
 {
