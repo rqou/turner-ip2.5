@@ -23,10 +23,11 @@
 #include "queue.h"
 #include "radio.h"
 #include "radio_settings.h"
-#include "tests.h" // TODO (fgb) : define/includes need to live elsewhere
+#include "tests.h" 
 #include "dfmem.h"
 #include "interrupts.h"
 #include "sclock.h"
+#include "ams-enc.h"
 #include <stdlib.h>
 
 Payload rx_payload;
@@ -51,6 +52,7 @@ int main() {
     SetupTimer2();
     sclockSetup();
     mpuSetup();
+    amsHallSetup();
     dfmemSetup();
 
     // Radio setup

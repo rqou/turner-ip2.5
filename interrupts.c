@@ -60,6 +60,10 @@ void __attribute__((interrupt, no_auto_psv)) _T2Interrupt(void) {
                 test->tf = &test_gyro;
                 queuePush(fun_queue, test);
                 break;
+		case HALL_TEST:
+ 			test->tf = &test_hall;
+                queuePush(fun_queue, test);
+                break;
             case ACCEL_TEST:
                 test->tf = &test_accel;
                 queuePush(fun_queue, test);

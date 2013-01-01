@@ -59,9 +59,11 @@
 #include <string.h>
 #include <stdlib.h>
 #include "radio_settings.h"
+#include "ams-enc.h"
 
 volatile Queue fun_queue;
 extern mpuObj mpu_data;
+
 
 /*****************************************************************************
 * Function Name : test_radio
@@ -99,26 +101,60 @@ unsigned char test_radio(unsigned char type, unsigned char status,\
 
 /*****************************************************************************
 * Function Name : test_gyro
-* Description   : Create and send out over the radio a number of test packets that
-*                 contain the three X,Y, and Z values read from the gyro.
-* Parameters    : type - The type field of the gyro test packet
-*                 status - Status field of gyro test packet (not yet used)
+* Description : Create and send out over the radio a number of test packets that
+* contain the three X,Y, and Z values read from the gyro.
+* Parameters : type - The type field of the gyro test packet
+* status - Status field of gyro test packet (not yet used)
+* length - The length of the payload data array
+* data - not used
+* Return Value : success indicator - 0 for failed, 1 for succeeded
+*****************************************************************************/
+unsigned char test_gyro(unsigned char type, unsigned char status,\
+                         unsigned char length, unsigned char* data)
+{  	MacPacket packet;
+     Payload pld;
+	// refresh MPU reading
+	mpuUpdate();
+
+    // Get a new packet from the pool
+    	packet = radioRequestPacket(sizeof(mpu_data));
+    	if(packet == NULL) return 0;
+    	macSetDestAddr(packet, RADIO_DEST_ADDR);
+
+     // Prepare the payload
+     	pld = packet->payload;
+     	paySetStatus(pld, STATUS_UNUSED);
+     	paySetType(pld, type);
+ 
+	// Read gyro data into the payload
+	memcpy(payGetData(pld), & mpu_data, sizeof(mpu_data)); // copy gyro data to packet
+
+   	// Enqueue the packet for broadcast
+  	while(!radioEnqueueTxPacket(packet));
+      return 1; //success
+}
+
+/*****************************************************************************
+* Function Name : test_hall
+* Description   : send out over the radio a the current position readings from the
+				Austria Microsystems AS5048B absolute Hall sensors
+* Parameters    : type - The type field of the hall test packet
+*                 status - Status field of Hall test packet (not yet used)
 *                 length - The length of the payload data array
 *                 data - not used
 * Return Value  : success indicator - 0 for failed, 1 for succeeded
 *****************************************************************************/
-unsigned char test_gyro(unsigned char type, unsigned char status,\
+unsigned char test_hall(unsigned char type, unsigned char status,\
                          unsigned char length, unsigned char* data)
-{
-    
-    int i;
-    MacPacket packet;
+{   int i;
+	MacPacket packet;
     Payload pld;
-// refresh MPU reading
-	mpuUpdate();
+// refresh Hall reading
+	for(i = 0; i< NUM_ENC; i++)
+	{ amsGetPos(i); }
 
     // Get a new packet from the pool
-    packet = radioRequestPacket(sizeof(mpu_data));
+    packet = radioRequestPacket(sizeof(encPos));
     if(packet == NULL) return 0;
     macSetDestAddr(packet, RADIO_DEST_ADDR);
 
@@ -127,15 +163,16 @@ unsigned char test_gyro(unsigned char type, unsigned char status,\
     paySetStatus(pld, STATUS_UNUSED);
     paySetType(pld, type);
  
-// Read gyro data into the payload
-
-	memcpy(payGetData(pld),  & mpu_data, sizeof(mpu_data)); // copy gyro data to packet
+// Read Hall data into the payload
+	memcpy(payGetData(pld),  & encPos, sizeof(encPos)); // copy gyro data to packet
 
    // Enqueue the packet for broadcast
     while(!radioEnqueueTxPacket(packet));
   
     return 1; //success
 }
+
+
 
 /*****************************************************************************
 * Function Name : test_accel

@@ -20,8 +20,9 @@
 #define DFLASH_TEST         3
 #define MOTOR_TEST          4
 #define SMA_TEST            5
+#define HALL_TEST	   6
 
-//Camera constants
+// camera constants
 #define IMCOLS 160
 #define IMROWS 100
 

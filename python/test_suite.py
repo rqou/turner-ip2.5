@@ -31,6 +31,7 @@ kTestAccelCmd   = 2
 kTestDFlashCmd  = 3
 kTestMotorCmd   = 4
 kTestSMACmd     = 5
+kTestHallCmd    = 6
 
 #kImWidth = 160
 #kImHeight = 100
@@ -113,6 +114,8 @@ class TestSuite():
 #            print map(str,rf_data[2:])
         elif typeID == kTestMotorCmd:
             print unpack('50H', rf_data[2:])
+        elif typeID == kTestHallCmd:
+            self.print_hall(self.last_packet)
 #        elif typeID == kTestRadioCmd:
 #            self.print_packet(self.last_packet)
 
@@ -137,30 +140,36 @@ class TestSuite():
                 time.sleep(0.1) # possible over run of packets?
                 self.print_packet(self.last_packet)
             time.sleep(1)
-
+############
     def test_gyro(self, num_test_packets):
         '''
         Description:
             Read the XYZ values from the gyroscope.
         '''
-
         data_out = chr(kStatusUnused) + chr(kTestGyroCmd) + chr(num_test_packets)
-
         if self.check_conn():
             self.radio.tx(dest_addr=self.dest_addr, data=data_out)
             time.sleep(num_test_packets * 0.5)
-
+#################
     def test_accel(self, num_test_packets):
         '''
         Description:
             Read the XYZ values from the accelerometer.
         '''
-
         data_out = chr(kStatusUnused) + chr(kTestAccelCmd) + chr(num_test_packets)
-
         packets_received = 0
         prev_data = None
         if(self.check_conn()):
+            self.radio.tx(dest_addr=self.dest_addr, data=data_out)
+            time.sleep(num_test_packets * 0.5)
+###############
+    def test_hall(self, num_test_packets):
+        '''
+        Description:
+            Read the position values from the Hall angle sensors.
+        '''
+        data_out = chr(kStatusUnused) + chr(kTestHallCmd) + chr(num_test_packets)
+        if self.check_conn():
             self.radio.tx(dest_addr=self.dest_addr, data=data_out)
             time.sleep(num_test_packets * 0.5)
 
@@ -266,7 +275,20 @@ class TestSuite():
         print "gyro data:" + str(map(hex,unpack('3h',rf_data[8:14])))
         print "temperature:" + str(map(hex,unpack('1h',rf_data[14:16])))
 #        print map(hex,unpack('7h',rf_data[2:]))
-     
+
+# Austria Microsystems Hall angle sensor packet:
+# int pos; long oticks; int calibPOS; int offset;
+    def print_hall(self,packet):
+        rf_data = packet.get('rf_data')
+        index = 0
+        for i in range(1,3):
+            print "Hall encoder:" + str(i-1)
+            print "position" + str(map(hex,unpack('1h',rf_data[index+2:index+4]))) + \
+                " revolutions" + str(map(hex,unpack('1i',rf_data[index+4:index+8])))
+            print "cal. pos and offset" + \
+                  str(map(hex,unpack('2h',rf_data[index+8:index+12])))
+            index = index + 10
+        print " "
 
     def __del__(self):
         '''

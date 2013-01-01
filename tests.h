@@ -36,6 +36,9 @@ unsigned char test_radio(unsigned char type, unsigned char status,\
 unsigned char test_gyro(unsigned char type, unsigned char status,\
                         unsigned char length, unsigned char* data);
 
+ unsigned char test_hall(unsigned char type, unsigned char status,\
+                        unsigned char length, unsigned char* data);
+
 unsigned char test_accel(unsigned char type, unsigned char status,\
                          unsigned char length, unsigned char* data);
 
@@ -62,3 +65,5 @@ typedef struct {
 } Test;
 
 #endif
+
+

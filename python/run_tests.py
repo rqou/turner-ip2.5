@@ -65,7 +65,8 @@ if __name__ == '__main__':
             ts.test_gyro(1)
             raw_input("\n I: Press any key to test flash memory...")
             ts.test_dflash()
-   
+            raw_input("\n III: Press any key to test Hall angle sensor ...")
+            ts.test_hall(1)
             #print('\nI: Testing radio communication:')
             #ts.test_radio()
     
