@@ -1,0 +1,16 @@
+# Compiled source & project cruft #
+###################################
+*.pyc
+
+*.cof
+*.map
+*.hex
+*.mcs
+*.mcw
+build
+dist
+private
+*.mk
+*.properties
+*.bash
+/obj/
