@@ -22,7 +22,7 @@
 #include "utils.h"
 #include "queue.h"
 #include "radio.h"
-#include "radio_settings.h"
+#include "MyConsts/radio_settings.h"
 #include "tests.h" 
 #include "dfmem.h"
 #include "interrupts.h"

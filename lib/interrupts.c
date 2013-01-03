@@ -80,7 +80,9 @@ void __attribute__((interrupt, no_auto_psv)) _T2Interrupt(void) {
                 test->tf = &test_sma;
                 queuePush(fun_queue, test);
                 break;
-            default:
+            default:    // temporary to check out what is happening to packets
+		     test->tf = &test_radio;
+                queuePush(fun_queue, test);
                 break;
         }
     }
