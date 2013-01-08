@@ -14,6 +14,8 @@
 #include "radio.h"
 #include <stdlib.h>
 #include "led.h"
+#include "cmd.h"
+#include "mac_packet.h"
 
 unsigned char* rxPacketData;
 unsigned char type, status, length;
@@ -27,21 +29,33 @@ void __attribute__((interrupt, no_auto_psv)) _INT0Interrupt(void) {
     _INT0IF = 0;    // Clear the interrupt flag
 }
 
-void __attribute__((interrupt, no_auto_psv)) _T1Interrupt(void) {
+// interrupt1 is used by PID
+/* void __attribute__((interrupt, no_auto_psv)) _T1Interrupt(void) {
 
     _T1IF = 0;
 }
+*/
 
-void __attribute__((interrupt, no_auto_psv)) _T2Interrupt(void) {
+// updated  cmdHandleRadioRxBuffer to push function on queue.
+// may have seom radio functions that are higher priority and 
+// flush queue...
+void __attribute__((interrupt, no_auto_psv)) _T2Interrupt(void)
+{ // unsigned char command; 
     MacPacket rx_packet;
-    Payload rx_payload;
+//    Payload rx_payload;
+//	char *temp;
 
     if (!radioRxQueueEmpty())
     {
         // Check for unprocessed packet
         rx_packet = radioDequeueRxPacket();
         if(rx_packet == NULL) return;
-
+//	temp = (char *)rx_packet;
+// Handle packet, check command type, push function
+      cmdPushFunc(rx_packet);
+//	cmdPushFunc(temp);
+/**********************************
+*  changed to use command packet type 
         // Retrieve payload
         rx_payload = macGetPayload(rx_packet);
 
@@ -50,6 +64,7 @@ void __attribute__((interrupt, no_auto_psv)) _T2Interrupt(void) {
         if(!test) return;
 
         test->packet = rx_packet;
+
         switch(payGetType(rx_payload))
         {
             case RADIO_TEST:
@@ -80,13 +95,12 @@ void __attribute__((interrupt, no_auto_psv)) _T2Interrupt(void) {
                 test->tf = &test_sma;
                 queuePush(fun_queue, test);
                 break;
-            default:    // temporary to check out what is happening to packets
-		     test->tf = &test_radio;
-                queuePush(fun_queue, test);
+            default:   // don't push anything
                 break;
         }
+*****************************/
     }
-    _T2IF = 0;
+    _T2IF = 0;	// clear interrupt flag
 }
 
 void setupTimer6(unsigned int fs) {

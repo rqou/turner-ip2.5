@@ -54,7 +54,7 @@ def xbee_received(packet):
     elif (type == command.ZERO_POS):
         print 'Previous motor positions:',
         motor = unpack('=2l',data)
-        print motor
+        print 'motor 0= %x' %motor[0] + ' motor 1= %x ' %motor[1]
     elif (type == command.SET_CTRLD_TURN_RATE):
         print "Set turning rate"
         rate = unpack('=h', data)[0]

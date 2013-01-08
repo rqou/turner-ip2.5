@@ -31,6 +31,8 @@
 #include "tih.h"
 #include "blink.h"
 #include <stdlib.h>
+#include "cmd.h"
+#include "pid-ip2.5.h"
 
 Payload rx_payload;
 MacPacket rx_packet;
@@ -57,6 +59,8 @@ int main() {
     amsHallSetup();
     dfmemSetup();
     tiHSetup();   // set up H bridge drivers
+	cmdSetup();  // setup command table
+	pidSetup();  // setup PID control
 
     // Radio setup
     radioInit(RADIO_RXPQ_MAX_SIZE, RADIO_TXPQ_MAX_SIZE);
@@ -83,7 +87,7 @@ int main() {
             test = queuePop(fun_queue);
             rx_payload = macGetPayload(test->packet);
             tf = test->tf;
-            (*tf)(payGetType(rx_payload), 
+            (*tf)(payGetType(rx_payload),   // old commands don't use packet type
                     payGetStatus(rx_payload), 
 			  payGetDataLength(rx_payload), 
                     payGetData(rx_payload));

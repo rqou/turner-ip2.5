@@ -37,11 +37,10 @@ cycle = 250 # ms for a leg cycle
 # velocity profile
 # [time intervals for setpoints]
 # [position increments at set points]
-# [velocity increments]   muliplied by 256
-delta = [10,10,10,12]  # adds up to 42 counts- should be 42.6
-intervals = [50, 50, 50, 100]  # total 250 ms
-#intervals = [40,40,10,10] # total 100 ms
-vel = [51,51,51,30]  # = 256*delta/interval
+# [velocity increments]   
+delta = [0x4000,0x4000,0x4000,0x4000]  # adds up to 65536 1.15 frac value
+intervals = [250, 250, 250, 250]  # total 1000 ms
+vel = [65, 65,65,65]  # = delta/interval
 
 
 ser = serial.Serial(shared.BS_COMPORT, shared.BS_BAUDRATE,timeout=3, rtscts=0)
@@ -65,6 +64,8 @@ def menu():
  
     
 #get velocity profile
+# velocity should be in Hall Diff per ms clock tick
+# 
 def getVelProfile():
     global cycle, intervals, vel
     sum = 0
@@ -72,12 +73,12 @@ def getVelProfile():
     x = raw_input()
     if len(x):
         temp = map(int,x.split(','))
-        delta[0] = (temp[0]*42)/360
+        delta[0] = (temp[0]*65536)/360
         sum = delta[0]
         for i in range(1,3):
-            delta[i] = ((temp[i]-temp[i-1])*42)/360
+            delta[i] = ((temp[i]-temp[i-1])*65536)/360
             sum = sum + delta[i]
-        delta[3]=42-sum
+        delta[3]=65536-sum
     else:
         print 'not enough delta values'
     print 'current cycle (ms)',cycle,' new value:',
@@ -90,12 +91,12 @@ def getVelProfile():
         for i in range(0,4):
             intervals[i] = cycle*intervals[i]/100  # interval in ms
             sum = sum + intervals[i]
-            vel[i] = (delta[i] <<8)/intervals[i]
+            vel[i] = (delta[i])/intervals[i]
         #adjust to total duration for rounding
         intervals[3] = intervals[3] + cycle - sum
     else:
         print 'not enough values'
- #  print 'intervals (ms)',intervals
+    print 'intervals (ms)',intervals
  
         
 
@@ -224,7 +225,7 @@ def writeFileHeader(dataFileName):
     fileout.close()
     
 def main():
-    print 'keyboard_telem Feb. 16, 2012\n'
+    print 'keyboard_telem for IP2.5c Jan. 2013\n'
     global throttle, duration, telemetry, dataFileName
     dataFileName = 'Data/imudata.txt'
     count = 0       # keep track of packet tries
@@ -237,8 +238,9 @@ def main():
     if ser.isOpen():
         print "Serial open. Using port",shared.BS_COMPORT
   
-    setGain()
+   
     xb_send(0, command.WHO_AM_I, "Robot Echo")
+    setGain()
     time.sleep(0.5)  # wait for whoami before sending next command
     setVelProfile()
     throttle = [0,0]
