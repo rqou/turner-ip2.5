@@ -43,7 +43,7 @@ typedef struct
 // pid type for leg control
 typedef struct
 {
-	long p_input;	// reference position input - mult by 16
+	long p_input;	// reference position input - [16].[16]
 	long p_state;	// current position
 	long p_error;  // position error
 	int v_input; // reference velocity input

@@ -50,7 +50,7 @@ int main() {
 
     SetupInterrupts();
     //SetupI2C();
-    //SetupADC();
+    SetupADC();
     SetupTimer1();
     //SetupPWM();
     SetupTimer2();

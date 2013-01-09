@@ -1,5 +1,6 @@
 # Keyboard control with hall effect sensing and telemetry
-# last revision 2/16/2012 by RSF
+# updated for IP2.5 and AMS Hall angle sensor Jan. 2013
+# treat encoder angle as 16 bits 0 ... 2pi (really 14 bits)
 import msvcrt, sys
 import numpy as np
 from lib import command
@@ -12,14 +13,8 @@ import shared
 
 DEST_ADDR = '\x20\x52'
 imudata_file_name = 'imudata.txt'
-statedata_file_name = 'statedata.txt'
-dutycycle_file_name = 'dutycycle.txt'
-motordata_file_name = 'motordata.txt'
 telemetry = False
 imudata = []
-statedata = []
-dutycycles = []
-motordata = []
 gainsNotSet = True;
 delay = 0.025
 
@@ -32,15 +27,15 @@ RESET_ROBOT = False
 # now uses back emf velocity as d term
 motorgains = [300,0,300,0,50, 300,0,300,0,50]
 throttle = [0,0]
-duration = 1000  # length of run
-cycle = 250 # ms for a leg cycle
+duration = 512  # length of run
+cycle = 512 # ms for a leg cycle
 # velocity profile
 # [time intervals for setpoints]
 # [position increments at set points]
 # [velocity increments]   
-delta = [0x4000,0x4000,0x4000,0x4000]  # adds up to 65536 1.15 frac value
-intervals = [250, 250, 250, 250]  # total 1000 ms
-vel = [65, 65,65,65]  # = delta/interval
+delta = [0x4000,0x4000,0x4000,0x4000]  # adds up to 65536 (2 pi)
+intervals = [128, 128, 128, 128]  # total 512 ms
+vel = [64, 64,64,64]  # = delta/interval
 
 
 ser = serial.Serial(shared.BS_COMPORT, shared.BS_BAUDRATE,timeout=3, rtscts=0)
@@ -53,6 +48,12 @@ def xb_send(status, type, data):
 def resetRobot():
     xb_send(0, command.SOFTWARE_RESET, pack('h',0))
 
+def setThrust():
+    global duration, count, delay, throttle
+    thrust = [throttle[0], throttle[1], duration]
+    xb_send(0, command.SET_THRUST, pack("3h",*thrust))
+    print "cmdSetThrust " + str(thrust)
+
 def menu():
     print "-------------------------------------"
     print "e: radio echo test    | g: right motor gains | h: Help menu"
@@ -60,7 +61,7 @@ def menu():
     print "m: toggle memory mode | n: get robot name    | p: proceed"
     print "q: quit               | r: reset robot       | s: set throttle"
     print "t: time of move length| v: set velocity profile"
-    print "z: zero motor counts"
+    print "x: PWM test thrust    | z: zero motor counts"
  
     
 #get velocity profile
@@ -299,7 +300,7 @@ def main():
             throttle[1] += tinc
             print "Throttle = ",throttle
         elif keypress == 'x':
-            throttle[1] = 0
+            setThrust()
         elif keypress == 'z':
             xb_send(0, command.ZERO_POS,  "Zero motor")
             print 'read motorpos and zero'

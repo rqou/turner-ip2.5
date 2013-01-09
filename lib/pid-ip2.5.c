@@ -30,7 +30,6 @@
 //#define HALFTHROT 10000
 #define HALFTHROT 2000
 #define FULLTHROT 2*HALFTHROT
-//#define MAXTHROT 19878
 // MAXTHROT has to allow enough time at end of PWM for back emf measurement
 // was 3976
 #define MAXTHROT 3800
@@ -379,60 +378,69 @@ void pidGetSetpoint()
 			if (t1_ticks >= pidVel[j].expire)  // time to reach previous setpoint has passed
 			{ 	pidVel[j].interpolate = 0;	
 				pidObjs[j].p_input += pidVel[j].delta[index];	//update to next set point
-				pidVel[j].expire += pidVel[j].interval[(index+1) % NUM_VELS];  // expire time for next interval
-			       pidObjs[j].v_input = (int)( pidVel[j].vel[(index+1) % NUM_VELS] * K_EMF);	  //update to next velocity 
+				pidVel[j].expire += pidVel[j].interval[index];  // expire time for next interval
+			       pidObjs[j].v_input = (int)pidVel[j].vel[index];	  //update to next velocity 
+			
 				// got to next index point	
 				pidVel[j].index++;
-		
 				if (pidVel[j].index >= NUM_VELS) 
 				{     pidVel[j].index = 0;
 					pidVel[j].leg_stride++;  // one full leg revolution
-	// need to correct for 426 counts per leg stride
-      // 5 rev @ 42 counts/rev = 210, actual set point 5 rev @ 42.6 counts, so add 3 to p_input 
-					if ((pidVel[j].leg_stride % 5) == 0)
-					{ pidObjs[j].p_input +=3; }					
+	/**** maybe need to handle round off in position set point ***/
 				}  // loop on index
-
 			}
 		}
 }
 
+#define VEL_BEMF 0  // select either back emf or backwd diff for vel est
 /* update state variables including motor position and velocity */
 void pidGetState()
-{   int i, measurements[2];
-	long p_state;
+{   int i;
+	long p_state, oldpos[NUM_PIDS], velocity;
+// get diff amp offset with motor off at startup time
+	if(calib_flag)
+	{ 	offsetAccumulatorL += adcGetAN8();  
+		offsetAccumulatorR += adcGetAN9();   
+		offsetAccumulatorCounter++; 	}
+ // choose velocity estimate  
+
+#define VEL_BEMF 0
+#if VEL_BEMF == 0    // use first difference on position for velocity estimate
+	for(i=0; i<NUM_PIDS; i++)
+	{ oldpos[i] = pidObjs[i].p_state; }
+#endif
+
 // only works to +-32K revs- might reset after certain number of steps? Should wrap around properly
-	for(i =0; i<2; i++)
+	for(i =0; i<NUM_PIDS; i++)
 	{	amsGetPos(i);
 	      p_state = (long)(encPos[i].pos << 2);		// pos 14 bits 0x0 -> 0x3fff
 	      p_state = p_state + (encPos[i].oticks << 16);
 		p_state = p_state - (long)(encPos[i].offset <<2); 	// subtract offset to get zero position
 		pidObjs[i].p_state = p_state;
 	}
+
+#if VEL_BEMF == 0    // use first difference on position for velocity estimate
+	for(i=0; i<NUM_PIDS; i++)
+	{	velocity = pidObjs[i].p_state - oldpos[i];  // 2**16 * revs per ms
+		velocity = velocity >> 6; // divide by 2**16, mult by 2**10 to get approx revs/sec
+	      if (velocity > 0x7fff) velocity = 0x7fff; // saturate to int
+		if(velocity < -0x7fff) velocity = -0x7fff;	
+		pidObjs[i].v_state = (int) velocity;
+	}
+#endif
+
+ // choose velocity estimate  
+
+#if VEL_BEMF == 1
+int measurements[NUM_PIDS];
 // Battery: AN0, MotorA AN8, MotorB AN9, MotorC AN10, MotorD AN11
 	measurements[0] = pidObjs[0].inputOffset - adcGetAN8(); // watch sign for A/D? unsigned int -> signed?
      	measurements[1] = pidObjs[1].inputOffset - adcGetAN9(); // AN1
-	
 
 //Get motor speed reading on every interrupt - A/D conversion triggered by PWM timer to read Vm when transistor is off
 // when motor is loaded, sometimes see motor short so that  bemf=offset voltage
 // get zero sometimes - open circuit brush? Hence try median filter
-
-/* assume DMA code for A/D read is working */
-/*    while(BusyADC1());
- 	measurements[0] = pidObjs[0].inputOffset - ReadADC1(0); // AN11
-    while(BusyADC2());
-  	measurements[1] = pidObjs[1].inputOffset - ReadADC2(0); // AN1
-*/	
- // get diff amp offset with motor off at startup time
-	if(calib_flag)
-	{ 	offsetAccumulatorL += adcGetAN8();  
-		offsetAccumulatorR += adcGetAN9();   
-		offsetAccumulatorCounter++; 	}
-
-
-	// median filter
-	for(i = 0; i<2; i++)
+	for(i = 0; i<2; i++) 	// median filter
 	{	if(measurements[i] > measLast1[i])	
 		{	if(measLast1[i] > measLast2[i]) {bemf[i] = measLast1[i];}  // middle value is median
 			else // middle is smallest
@@ -449,8 +457,7 @@ void pidGetState()
 				}
 			}
 		}
-	}
-
+	} // end for
 // store old values
 	measLast2[0] = measLast1[0];  measLast1[0] = measurements[0];
 	measLast2[1] = measLast1[1];  measLast1[1] = measurements[1];
@@ -459,8 +466,8 @@ void pidGetState()
     //if((measurements[0] > 0) || (measurements[1] > 0)) {
     if((measurements[0] > 0)) { LED_BLUE = 1;}
     else{ LED_BLUE = 0;}
+#endif
 }
-
 
 
 void pidSetControl()
@@ -471,38 +478,46 @@ void pidSetControl()
 	// p_input has scaled velocity interpolation to make smoother
 	// p_state is [16].[16]
         	pidObjs[j].p_error = pidObjs[j].p_input + (pidVel[j].interpolate >> 8)  - pidObjs[j].p_state;
-            pidObjs[j].v_error = pidObjs[j].v_input - pidObjs[j].v_state;  // v_input should be A/D volts per Hall count/ms
+            pidObjs[j].v_error = pidObjs[j].v_input - pidObjs[j].v_state;  // v_input should be revs/sec
             //Update values
             UpdatePID(&(pidObjs[j]));
-   		if(pidObjs[j].onoff)
-		{ tiHSetDC(j,pidObjs[j].output); }
+       } // end of for(j)
+  /*** HACK tih uses channel+1, motor A and B swapped, A wired backwards ****/
+		if(pidObjs[j].onoff)
+		{ tiHSetDC(1, -pidObjs[1].output); 
+		   tiHSetDC(2, pidObjs[0].output); 
+		}  // change sign if motor is wired backwards...
 		else // turn off motors if PID loop is off
-		{tiHSetDC(j,0); }
-      } // end of for(j)
+		{ tiHSetDC(1,0); tiHSetDC(2,0); }	
 }
 
 
 void UpdatePID(pidPos *pid)
 {
-    pid->p = (long)pid->Kp * pid->p_error;  
+    pid->p = ((long)pid->Kp * pid->p_error) >> 12 ;  // scale so doesn't over flow
     pid->i = (long)pid->Ki  * pid->i_error;
     pid->d=(long)pid->Kd *  (long) pid->v_error;
     // better check scale factors
-/* just use simple PID, offset is already subtracted in PID GetState */
-// scale so doesn't over flow
+
     pid->preSat = pid->feedforward + pid->p +
 		 ((pid->i + pid->d) >> 4); // divide by 16
 	pid->output = pid->preSat;
-   //Clamp output above 0 since don't have H bridge
-    if (pid->preSat < 0){pid->output=0;}
  
 	pid-> i_error = (long)pid-> i_error + (long)pid->p_error; // integrate error
 // saturate output - assume only worry about >0 for now
 // apply anti-windup to integrator  
 	if (pid->preSat > MAXTHROT) 
 	{ 	      pid->output = MAXTHROT; 
-			pid->i_error = (long) pid->i_error + (long)(pid->Kaw) * ((long)(MAXTHROT) - (long)(pid->preSat)) / ((long)GAIN_SCALER);		
-	}                    
+			pid->i_error = (long) pid->i_error + 
+				(long)(pid->Kaw) * ((long)(MAXTHROT) - (long)(pid->preSat)) 
+				/ ((long)GAIN_SCALER);		
+	}      
+	if (pid->preSat < -MAXTHROT)
+      { 	      pid->output = -MAXTHROT; 
+			pid->i_error = (long) pid->i_error + 
+				(long)(pid->Kaw) * ((long)(MAXTHROT) - (long)(pid->preSat)) 
+				/ ((long)GAIN_SCALER);		
+	}      
 }
 
 

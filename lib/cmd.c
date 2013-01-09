@@ -26,6 +26,8 @@
 #include "queue.h"
 #include "version.h"
 #include "../MyConsts/radio_settings.h"
+#include "tiH.h"
+#include "timer.h"
 
 
 #include <stdio.h>
@@ -192,20 +194,23 @@ void cmdError()
  * ----------------------------------------------------------------------------
 -----------------------------------------------------------------------------*/
 
-static void cmdSetThrust(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame) {
+// set PWM values for short duration for each motor
+// throttle[0], throttle[1], duration
+static void cmdSetThrust(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame)
+ {	int thrust1 = frame[0] + (frame[1] << 8);
+	int thrust2 = frame[2] + (frame[3] << 8);
+	unsigned int run_time_ms = frame[4] + (frame[5] << 8);
 
-    unsigned char chr_test[4];
-    float *duty_cycle = (float*)chr_test;
-
-    chr_test[0] = frame[0];
-    chr_test[1] = frame[1];
-    chr_test[2] = frame[2];
-    chr_test[3] = frame[3];
-/*    
-    mcSetDutyCycle(MC_CHANNEL_PWM1, duty_cycle[0]);
-	//mcSetDutyCycle(1, duty_cycle[0]);
-*/
-}
+	DisableIntT1;	// since PID interrupt overwrites PWM values
+// wiring was scrambled Jan. 9, 2013 on RSF velociRoACH robot
+  	tiHSetDC(1, -thrust2);
+	tiHSetDC(2, thrust1); 
+	delay_ms(run_time_ms);
+	tiHSetDC(1,0);
+	tiHSetDC(2,0);
+	EnableIntT1;
+ }  
+	
 
 
 static void cmdSteer(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame){
@@ -345,7 +350,7 @@ static void cmdEraseMemSector(unsigned char type, unsigned char status, unsigned
  *          AUX functions
 -----------------------------------------------------------------------------*/
 void cmdEcho(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame) 
-{ MacPacket packet; Payload pld;
+{ // MacPacket packet; Payload pld;
 	//Send confirmation packet
 	radioConfirmationPacket(RADIO_DEST_ADDR, CMD_ECHO, status, length, frame);  
     return; //success     
@@ -386,9 +391,8 @@ static void cmdSetThrustOpenLoop(unsigned char type, unsigned char status, unsig
 	//mcSetDutyCycle(1, duty_cycle[0]);
 }
 
-static void cmdSetThrustClosedLoop(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame){
-	int i;
-	int thrust1 = frame[0] + (frame[1] << 8);
+static void cmdSetThrustClosedLoop(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame)
+{	int thrust1 = frame[0] + (frame[1] << 8);
 	unsigned int run_time_ms1 = frame[2] + (frame[3] << 8);
 	int thrust2 = frame[4] + (frame[5] << 8);
 	unsigned int run_time_ms2 = frame[6] + (frame[7] << 8);
@@ -397,7 +401,6 @@ static void cmdSetThrustClosedLoop(unsigned char type, unsigned char status, uns
 	pidOn(0);
 	pidSetInput(1 ,thrust2, run_time_ms2);
 	pidOn(1);
-
 }
 
 static void cmdSetPIDGains(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame){
