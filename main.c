@@ -33,15 +33,18 @@
 #include <stdlib.h>
 #include "cmd.h"
 #include "pid-ip2.5.h"
+#include "steering.h"
+#include "consts.h"
 
 Payload rx_payload;
 MacPacket rx_packet;
 Test* test;
-
+unsigned int error_code;
 
 int main() {
     fun_queue = queueInit(FUN_Q_LEN);
     test_function tf;
+    error_code = ERR_NONE;
 
     /* Initialization */
     SetupClock();
@@ -57,7 +60,7 @@ int main() {
     sclockSetup();
     mpuSetup();
     amsHallSetup();
-    dfmemSetup();
+    dfmemSetup(); 
     tiHSetup();   // set up H bridge drivers
 	cmdSetup();  // setup command table
 	pidSetup();  // setup PID control
@@ -68,7 +71,8 @@ int main() {
     radioSetSrcAddr(RADIO_SRC_ADDR);
     radioSetSrcPanID(RADIO_PAN_ID);
     setupTimer6(RADIO_FCY); // Radio and buffer loop timer
-
+/**** set up steering last - so dfmem can finish ****/
+	steeringSetup(); // steering and Timer5 Int 
 	blink_leds(4,500); // blink LEDs 4 times at half sec
     char j;
     for(j=0; j<3; j++){

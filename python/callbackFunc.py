@@ -74,6 +74,7 @@ def xbee_received(packet):
         print "pkt ",shared.pkts,
         pattern = '=L'+14*'h'
         datum = unpack(pattern, data)
+ #       print "datum = " + str(datum)
  # diagnostic
  #       if (shared.pkts < 20):
  #           print "datum =", datum

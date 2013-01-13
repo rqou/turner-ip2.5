@@ -27,8 +27,14 @@ extern volatile Queue fun_queue;
 
 // A function pointer type definition for all testing functions
 // All testing functions must take 3 char args and one char array
-typedef unsigned char (*test_function)(unsigned char, unsigned char,\
+/* typedef unsigned char (*test_function)(unsigned char, unsigned char,\
                              unsigned char, unsigned char*);
+*/
+/// cmd doesn't return any value
+typedef void (*test_function)(unsigned char, unsigned char,\
+                             unsigned char, unsigned char*);
+
+
 
 unsigned char test_radio(unsigned char type, unsigned char status,\
                          unsigned char length, unsigned char* data);

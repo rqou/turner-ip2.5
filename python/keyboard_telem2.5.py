@@ -57,7 +57,7 @@ def setThrust():
 def menu():
     print "-------------------------------------"
     print "e: radio echo test    | g: right motor gains | h: Help menu"
-    print "l: left motor gains"
+    print "f: flash readback     | l: left motor gains"
     print "m: toggle memory mode | n: get robot name    | p: proceed"
     print "q: quit               | r: reset robot       | s: set throttle"
     print "t: time of move length| v: set velocity profile"
@@ -159,7 +159,7 @@ def getGain(lr):
             print 'not enough gain values'
             
 # execute move command
-count = 300
+count = 32
 
 def proceed():
     global duration, count, delay, throttle
@@ -172,6 +172,7 @@ def proceed():
         skip = 0    # store every other sample if = 1
         temp=[count,start,skip]
         print 'temp =',temp,'\n'
+        raw_input("Press any key to send StartTelem...")
         xb_send(0, command.START_TELEM, pack('3h',*temp))
         time.sleep(0.1)
     xb_send(0, command.SET_THRUST_CLOSED_LOOP, pack('5h',*thrust))
@@ -266,6 +267,8 @@ def main():
         elif keypress == 'e':
             xb_send(0, command.ECHO,  "Echo Test")
             throttle[0] += tinc
+        elif keypress == 'f':
+            flashReadback()
         elif keypress == 'g':
             getGain('R')
             setGain()

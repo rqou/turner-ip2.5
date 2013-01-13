@@ -1,42 +1,35 @@
 #include "pid-ip2.5.h"
 #include "timer.h"
-#include "gyro.h"
+#include "mpu6000.h"
 #include "steering.h"
 #include "stopwatch.h"
-#include "dfmem_extra.h"
+//#include "dfmem_extra.h" replace with telemetry.c
 #include "move_queue.h"
-#include "xl.h"
 #include "utils.h" 
+#include "telemetry.h"
 #define TIMER_FREQUENCY     200                 // 400 Hz
 #define TIMER_PERIOD        1/TIMER_FREQUENCY
 #define SKIP_COUNT          2
 
 long gyro_accum;
-int j;
+int gyroAvg;
 int gdata[3];
-//int acceldata[3];
-// unsigned char* xl_data;
 int xldata[3];  // accelerometer data 
 pidT steeringPID;
 int steeringIsOn;
-int gyroAvg;
+
 int telemSkip;
 
 // structure to keep track of telemetry recording
-TelemStruct TelemControl;
+extern TelemStruct TelemControl;
 extern int samplesToSave;
 
-
-int datactr;
-
-int samplesToSave;
-
 static int gyroWindow[GYRO_AVG_SAMPLES];
-
 int windowIdx;
 
 //extern int offsx, offsy, offsz;
 int offsx, offsy, offsz;
+extern mpuObj mpu_data; // gyro data structure
 
 extern pidPos pidObjs[NUM_PIDS];
 extern int bemf[NUM_PIDS];
@@ -45,25 +38,35 @@ extern moveCmdT currentMove;
 
 extern unsigned long t1_ticks; //needed to calculate new runtimes
 
-void steeringSetup(void) {
-
+void steeringSetup(void) 
+{   int i; long calib[3];
     gyro_accum = 0;
-    j = 0;
-    setSampleSaveCount(0);   // turn off sampling by default unless enabled
+     setSampleSaveCount(0);   // turn off sampling by default unless enabled
     telemSkip = 1;  
-
+	DisableIntT5; // make sure interrupt is off
 //set up telemetry structure
 	TelemControl.onoff = 0; 
 	TelemControl.start = 0x0;
 	TelemControl.count = 0x0;
 	TelemControl.skip = 0x01;
-    
+
+// get gyro offset 
+	calib[0] = 0; calib[1]=1; calib[2]=0;
+	for( i =0; i < GYRO_AVG_SAMPLES; i++)
+	{ mpuUpdate();
+	   calib[0] += mpu_data.gyro_data[0];
+ 	   calib[1] += mpu_data.gyro_data[1];
+	   calib[2] += mpu_data.gyro_data[2];
+	} 
+	offsx = (int)(calib[0]/GYRO_AVG_SAMPLES);
+	offsy = (int)(calib[1]/GYRO_AVG_SAMPLES);
+	offsz = (int)(calib[2]/GYRO_AVG_SAMPLES);
+
     initPIDObj(&steeringPID, STEERING_KP, STEERING_KI, STEERING_KD, STEERING_KAW, 0);
     setSteeringAngRate(0);
 
-    // period value = Fcy/(prescale*Ftimer)
+    // period value = Fcy/(prescale*Ftimer)  Fcy = 40 MHz
     unsigned int con_reg, period;
-
     // prescale 1:64
     con_reg = T5_ON & T5_IDLE_STOP & T5_GATE_OFF & T5_PS_1_64 & T5_SOURCE_INT;
     // Period is set so that period = 5ms (200Hz), MIPS = 40
@@ -78,82 +81,49 @@ void steeringSetup(void) {
 
     // interrupt for reading gyro
     ConfigIntTimer5(T5_INT_PRIOR_3 & T5_INT_ON);
-
+//	DisableIntT5;   // DEBUG enabling interrupt seems to cause problem
     //offs = (float*)(gyroGetCalibParam());
 	steeringIsOn = 1;
 	windowIdx = 0;
 }
 
-void __attribute__((interrupt, no_auto_psv)) _T5Interrupt(void) {
-    
+/////  Main steering PID loop, gyro update, and telemetry saving
+// note that flash and gyro share same SPI, thus only one can run at a time
+// T5 int should be only place mpuUpdate is called, and only place writes to Flash occur
+void __attribute__((interrupt, no_auto_psv)) _T5Interrupt(void) 
+{
+// unsigned long time_start, time_end; 
+// 	time_start =  swatchTic(); 
     //int gyroAvg;
 	int left, right;
 	int i;
 
-    /*
-	if(j < GYRO_AVG_SAMPLES){
-        gyro_accum += (long)gdata[2] - (long)offsz;
-        j++;
-    }
-    else{ //make steering decision
-		  //this should happen at at freuqnecy of f_timer5 / GYRO_AVG_SAMPLES
-        gyroAvg = (int)(gyro_accum / (long)GYRO_AVG_SAMPLES);
-		gyro_accum = 0;
-        j = 0;
+  	mpuUpdate(); // read mpu6000 gyro + accelerometer
 
-		//apply calculated steering correction to drive
-		if((pidObjs[0].input != 0) && (pidObjs[1].input != 0)){  
-			//Only update steering controller if we are in motion
-			steeringPID.error = steeringPID.input - gyroAvg;
-        	UpdatePIDSteering(&steeringPID , gyroAvg);
-			
-			//left = pidObjs[0].input;    WRONG --> causes an implicit accumulation!!!
-			//right = pidObjs[1].input; 
-			left = currentMove->inputL;
-			right = currentMove->inputR;
-			
-			// Depending on which way the bot is turning, choose which side to add correction to
-			if( steeringPID.input <= 0){
-				right = right - steeringPID.output;
-				if( right < 0){ right = 1; }  //clip right channel to zero (one, actually)
-			} else //if(steeringPID.input > 0)
-			{
-				left = left + steeringPID.output;
-				if( left < 0){ left = 1; }  //clip right channel to zero (one, actually)
-			}
-			pidSetInputSameRuntime(0, left);
-			pidSetInputSameRuntime(1, right);	
-		}
-    }*/
 
-	gyroGetXYZ((unsigned char*)gdata);
 
-/*	xlGetXYZ((unsigned char*)xldata);    // reads 6 bytes into xldata- bye aligned = int
-*/
+// for now just copy data from structure
+	for(i = 0; i<3; i++)
+	{ gdata[i] = mpu_data.gyro_data[i];
+	   xldata[i] = mpu_data.xl_data[i];
+	}
 
-/**** old *****
-	xlGetXYZ((unsigned char*)acceldata);
-	xl_data = xlReadXYZ();
-*******/
+// get moving average of z axis
 	gyroWindow[windowIdx] = gdata[2];
 	windowIdx = (windowIdx + 1) % GYRO_AVG_SAMPLES;
-
 	gyro_accum = 0;
 	for( i =0; i < GYRO_AVG_SAMPLES; i++){
 		gyro_accum += gyroWindow[i];
 	}
-/*  temp define of offsz ***** */
-	offsz = 0;
 	gyroAvg = (gyro_accum - GYRO_AVG_SAMPLES*offsz) / GYRO_AVG_SAMPLES;
+
 
 	//Update the setpoints
 	if((currentMove->inputL != 0) && (currentMove->inputR != 0)){  
 		//Only update steering controller if we are in motion
 		steeringPID.error = steeringPID.input - gyroAvg;
        	UpdatePIDSteering(&steeringPID , gyroAvg);
-		
-		//left = pidObjs[0].input;    WRONG --> causes an implicit accumulation!!!
-		//right = pidObjs[1].input; 
+
 		left = currentMove->inputL;
 		right = currentMove->inputR;
 		
@@ -176,77 +146,30 @@ void __attribute__((interrupt, no_auto_psv)) _T5Interrupt(void) {
 		{	if( telemSkip == 0)
 			{	if(samplesToSave > 0)
 				{samplesToSave--;
-				  pidSaveTelemetry(); // save current sample
+				  telemSaveSample(); // save current sample
 				  telemSkip = TelemControl.skip;  // reset skip
 			  	 }
-				else
-				{TelemControl.onoff = 0;}	// turn off telemetry if no more counts
+				else  {TelemControl.onoff = 0;}	// turn off telemetry if no more counts
 			}   
-			else
-			{ telemSkip--;}  
-            }            
+			else  { telemSkip--;}  
+             }         
        }     
-
-    _T5IF = 0;
+//	time_end =  swatchToc();	
+    _T5IF = 0;  // clear Interrupt flag so won't re-interrupt
 
 }
 
-// record current state
-void pidSaveTelemetry(void)
-{	telemU data;
-//Stopwatch was already started in the cmdSpecialTelemetry function
 
-	//Stopwatch was already started in the cmdSpecialTelemetry function
-			data.telemStruct.timeStamp = (long)swatchTic(); 
-// since T1 has higher priority, this might get interrupted 
-	CRITICAL_SECTION_START
-/*
-			data.telemStruct.inputL = pidObjs[0].v_input;  
-			data.telemStruct.inputR = pidObjs[1].v_input;
-*/
-//  save hall effect position instead of commanded thrust
-		data.telemStruct.inputL = (int) (pidObjs[0].p_state & 0xffff);
-		data.telemStruct.inputR = (int) (pidObjs[1].p_state & 0xffff);
-
-
-	// save output instead of reading PWM (sync issue?)
-			data.telemStruct.dcL = pidObjs[0].output;	// left
-			data.telemStruct.dcR = pidObjs[1].output;	// right
-			data.telemStruct.bemfL = bemf[0];
-			data.telemStruct.bemfR = bemf[1];
-	CRITICAL_SECTION_END
-   
- /*			data.telemStruct.gyroX = gdata[0] - offsx;
-			data.telemStruct.gyroY = gdata[1] - offsy;
-			data.telemStruct.gyroZ = gdata[2] - offsz; */
- 		
-// NEED TO UPDATE OFFSETS in NEW GYRO.C
-			data.telemStruct.gyroX = gdata[0]; 
-			data.telemStruct.gyroY = gdata[1];
-			data.telemStruct.gyroZ = gdata[2];
-			data.telemStruct.gyroAvg = gyroAvg;
-/* buggy only gets lower 8 bits 
-			data.telemStruct.accelX = (int)(*(xl_data));
-			data.telemStruct.accelY = (int)(*(xl_data+2));
-			data.telemStruct.accelZ = (int)(*(xl_data+4));
-*/
-			data.telemStruct.accelX = xldata[0];
-			data.telemStruct.accelY = xldata[1];
-			data.telemStruct.accelZ = xldata[2];
-			data.telemStruct.sOut = steeringPID.output;
-			saveTelemData(&data); 
-	
-}
 
 void setSteeringAngRate(int angRate)
 {  
-	_T5IE = 0;
+	CRITICAL_SECTION_START  // don't want gains changing in middle of cycle
 	steeringPID.input = angRate;
 	steeringPID.p = 0;
 	steeringPID.i = 0;
 	steeringPID.d = 0;
 	steeringPID.iState = 0;
-	_T5IE = 1;
+	CRITICAL_SECTION_END
 }
 
 //I need a better solution than this
@@ -288,7 +211,3 @@ void getSteeringTelem(unsigned char* ptr){
 	
 }
 */
-
-void setSampleSaveCount(int count){
-	samplesToSave = count;
-}
