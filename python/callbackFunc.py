@@ -71,8 +71,9 @@ def xbee_received(packet):
                 shared.imudata.append(datum[4*i:4*(i+1)] )
     elif (type == command.SPECIAL_TELEMETRY):
         shared.pkts = shared.pkts + 1
+        # updated angle position to signed long (l) for IP2.5
         print "pkt ",shared.pkts,
-        pattern = '=L'+14*'h'
+        pattern = '=Lll'+13*'h'
         datum = unpack(pattern, data)
  #       print "datum = " + str(datum)
  # diagnostic

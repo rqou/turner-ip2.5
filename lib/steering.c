@@ -97,10 +97,9 @@ void __attribute__((interrupt, no_auto_psv)) _T5Interrupt(void)
     //int gyroAvg;
 	int left, right;
 	int i;
-
+ 
+// this is only place where mpuUpdate can be called as it shares SPI2 with dfmem
   	mpuUpdate(); // read mpu6000 gyro + accelerometer
-
-
 
 // for now just copy data from structure
 	for(i = 0; i<3; i++)

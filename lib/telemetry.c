@@ -9,6 +9,7 @@
 #include "../MyConsts/radio_settings.h"
 #include "timer.h"
 #include "cmd.h"
+#include "adc_pid.h"
 
 int samplesToSave;
 extern int gdata[3];
@@ -31,8 +32,10 @@ void telemSaveSample(void)
 // since T1 has higher priority, these state readings might get interrupted 
 	CRITICAL_SECTION_START  // need coherent sample without T1 int updates
 //  save Hall encoder position instead of commanded thrust
-		data.telemStruct.inputL = (int) (pidObjs[0].p_state & 0xffff);
-		data.telemStruct.inputR = (int) (pidObjs[1].p_state & 0xffff);
+		data.telemStruct.posL = pidObjs[0].p_state;
+		data.telemStruct.posR = pidObjs[1].p_state;
+
+
 	// save output instead of reading PWM (sync issue?)
 			data.telemStruct.dcL = pidObjs[0].output;	// left
 			data.telemStruct.dcR = pidObjs[1].output;	// right
@@ -48,6 +51,7 @@ void telemSaveSample(void)
 			data.telemStruct.accelX = xldata[0];
 			data.telemStruct.accelY = xldata[1];
 			data.telemStruct.accelZ = xldata[2];
+			data.telemStruct.Vbatt = (int) adcGetVbatt();
 			data.telemStruct.sOut = steeringPID.output;
 // inside T5 interrupt, so don't need to DisableIntT5
 			telemFlashSample(&data); 
@@ -68,7 +72,7 @@ void setSampleSaveCount(int count){
 
 //read telemetry from Flash Memory and send radio packets back
 void telemFlashReadback(unsigned int count)
-{  int i; unsigned char status = 0;
+{  unsigned char status = 0;
 	unsigned int sampLen = sizeof(telemStruct_t);
 	unsigned long sampNum = 0;
 	telemU data;

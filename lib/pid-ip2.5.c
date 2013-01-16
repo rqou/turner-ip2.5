@@ -26,6 +26,7 @@
 #include "ams-enc.h"
 #include "tih.h"
 #include <stdlib.h> // for malloc
+#include "init.h"  // for Timer1
 
 //#define HALFTHROT 10000
 #define HALFTHROT 2000
@@ -51,7 +52,7 @@ int seqIndex;
 
 //for battery voltage:
 char calib_flag = 0;   // flag is set if doing calibration
-unsigned long offsetAccumulatorL, offsetAccumulatorR;
+long offsetAccumulatorL, offsetAccumulatorR;
 unsigned int offsetAccumulatorCounter;
 
 MoveQueue moveq;
@@ -79,9 +80,7 @@ void pidSetup()
 		initPIDObjPos( &(pidObjs[i]), DEFAULT_KP, DEFAULT_KI, DEFAULT_KD, DEFAULT_KAW, DEFAULT_FF); 
 	}
 	initPIDVelProfile();
-	SetupTimer1();  // used for leg motor PID
-//	SetupTimer2(); // used for leg hall effect sensors
-//	SetupInputCapture(); // setup input capture for hall effect sensors
+	SetupTimer1();  // main interrupt used for leg motor PID
 
 // returns pointer to queue with 8 move entries
 	moveq = mqInit(8); 
@@ -118,22 +117,16 @@ void initPIDVelProfile()
 	{    	pidVel[j].index = 0;  // point to first velocity
 		pidVel[j].interpolate = 0; 
 		pidVel[j].leg_stride = 0;  // set initial leg count
-	// set control intervals during stride - try to get close to 21.3 ratio (use 42 counts)
-  		pidVel[j].interval[0]= (4*STRIDE_TICKS/NUM_VELS/3); 
-		pidVel[j].delta[0] =  11;
-	     	pidVel[j].interval[1]= (2*STRIDE_TICKS/NUM_VELS/3); 
-		pidVel[j].delta[1] =  10;
-	     	pidVel[j].interval[2]= (4*STRIDE_TICKS/NUM_VELS/3); 
-		pidVel[j].delta[2] =  11;
-	  	pidVel[j].interval[3]= (2*STRIDE_TICKS/NUM_VELS/3); 
-		pidVel[j].delta[3] =  10;
+  		
 		for(i = 0; i < NUM_VELS; i++)
 		{   	// interpolate values between setpoints, <<4 for resolution
+			pidVel[j].interval[i] = 128;  // 128 ms intervals
+		       pidVel[j].delta[i] =  0x1000; // 1/16 rev
 			pidVel[j].vel[i] = (pidVel[j].delta[i] << 8) / pidVel[j].interval[i];
 		 }
 		pidObjs[j].p_input = 0; // initialize first set point 
 //		pidObjs[j].v_input = 0; // initialize first velocity
-		pidObjs[j].v_input = (int)( pidVel[j].vel[0] * K_EMF);	//initialize first velocity
+		pidObjs[j].v_input = (int)(((long) pidVel[j].vel[0] * K_EMF) >>8);	//initialize first velocity, scaled
 	}
 }
 
@@ -190,12 +183,13 @@ void initPIDObj(pidT *pid, int Kp, int Ki, int Kd, int Kaw, int ff)
     pid->error = 0;
 }
 
+
 // called from set thrust closed loop, etc. Thrust 
 void pidSetInput(int pid_num, int input_val, unsigned int run_time){
 unsigned long temp;	
 /*      ******   use velocity setpoint + throttle for compatibility between Hall and Pullin code *****/
 /* otherwise, miss first velocity set point */
-    pidObjs[pid_num].v_input = input_val + (int)( pidVel[pid_num].vel[0] * K_EMF);	//initialize first velocity ;
+    pidObjs[pid_num].v_input = input_val + (int)(( (long)pidVel[pid_num].vel[0] * K_EMF) >> 8);	//initialize first velocity ;
     pidObjs[pid_num].run_time = run_time;
     pidObjs[pid_num].start_time = t1_ticks;
     //zero out running PID values
@@ -279,7 +273,8 @@ unsigned char* pidGetTelemetry(void){
 // timer 1 interrupt loop
 // BATTERY CHANGED FOR IP2.5 ***** need to fix
 void calibBatteryOffset(int spindown_ms){
-	unsigned long temp;
+	long temp;  // could be + or -
+	unsigned int battery_voltage;
 // save current PWM config
 	int tempPDC1 = PDC1;
 	int tempPDC2 = PDC2;
@@ -299,15 +294,16 @@ void calibBatteryOffset(int spindown_ms){
 	calib_flag = 1;  // enable calibration
 	while(offsetAccumulatorCounter < 100); // wait for 100 samples
 	calib_flag = 0;  // turn off calibration
+	battery_voltage = adcGetVbatt();
 	//Left
 	temp = offsetAccumulatorL;
-	temp = temp/(unsigned long)offsetAccumulatorCounter;
-	pidObjs[0].inputOffset = temp;
+	temp = temp/(long)offsetAccumulatorCounter;
+	pidObjs[0].inputOffset = (int) temp;
 
 	//Right
 	temp = offsetAccumulatorR;
-	temp = temp/(unsigned long)offsetAccumulatorCounter;
-	pidObjs[1].inputOffset = temp;
+	temp = temp/(long)offsetAccumulatorCounter;
+	pidObjs[1].inputOffset = (int) temp;
 
 	LED_RED = 0;
 // restore PID values
@@ -368,7 +364,7 @@ void __attribute__((interrupt, no_auto_psv)) _T1Interrupt(void)
 
 
 void pidGetSetpoint()
-{ int j, index;
+{ int j, index; long temp_v;
 
 	 for(j=0; j < NUM_PIDS; j++)
 		{  	index = pidVel[j].index;		
@@ -379,7 +375,8 @@ void pidGetSetpoint()
 			{ 	pidVel[j].interpolate = 0;	
 				pidObjs[j].p_input += pidVel[j].delta[index];	//update to next set point
 				pidVel[j].expire += pidVel[j].interval[index];  // expire time for next interval
-			       pidObjs[j].v_input = (int)pidVel[j].vel[index];	  //update to next velocity 
+				temp_v = ((long)pidVel[j].vel[index] * K_EMF)>>8;  // scale velocity to A/D units
+			       pidObjs[j].v_input = (int)(temp_v);	  //update to next velocity 
 			
 				// got to next index point	
 				pidVel[j].index++;
@@ -392,19 +389,29 @@ void pidGetSetpoint()
 		}
 }
 
-#define VEL_BEMF 0  // select either back emf or backwd diff for vel est
+ // select either back emf or backwd diff for vel est
+#define VEL_BEMF 1
 /* update state variables including motor position and velocity */
 void pidGetState()
 {   int i;
 	long p_state, oldpos[NUM_PIDS], velocity;
 // get diff amp offset with motor off at startup time
 	if(calib_flag)
-	{ 	offsetAccumulatorL += adcGetAN8();  
-		offsetAccumulatorR += adcGetAN9();   
+	{ 	
+// mis wired motor
+#define HACK 0  
+#if HACK == 0 
+		offsetAccumulatorL += adcGetMotorA();  
+		offsetAccumulatorR += adcGetMotorB();   
+#endif
+#if HACK == 1 // swapped motor A,B
+		offsetAccumulatorL += adcGetMotorB();  
+		offsetAccumulatorR += adcGetMotorA();   // statically, doesn't matter motor turn direction...
+#endif
 		offsetAccumulatorCounter++; 	}
  // choose velocity estimate  
 
-#define VEL_BEMF 0
+
 #if VEL_BEMF == 0    // use first difference on position for velocity estimate
 	for(i=0; i<NUM_PIDS; i++)
 	{ oldpos[i] = pidObjs[i].p_state; }
@@ -434,9 +441,17 @@ void pidGetState()
 #if VEL_BEMF == 1
 int measurements[NUM_PIDS];
 // Battery: AN0, MotorA AN8, MotorB AN9, MotorC AN10, MotorD AN11
-	measurements[0] = pidObjs[0].inputOffset - adcGetAN8(); // watch sign for A/D? unsigned int -> signed?
-     	measurements[1] = pidObjs[1].inputOffset - adcGetAN9(); // AN1
+ /*** HACK tih uses channel+1, motor A and B swapped, A wired backwards ****/
 
+#if HACK == 0 
+	measurements[0] = pidObjs[0].inputOffset - adcGetMotorA(); // watch sign for A/D? unsigned int -> signed?
+     	measurements[1] = pidObjs[1].inputOffset - adcGetMotorB(); // MotorB
+#endif
+#if HACK == 1 // swapped motor A,B
+	measurements[0] = pidObjs[0].inputOffset - adcGetMotorB(); // watch sign for A/D? unsigned int -> signed?
+     	measurements[1] = -(pidObjs[1].inputOffset - adcGetMotorA()); // backwds MotorA
+#endif
+	
 //Get motor speed reading on every interrupt - A/D conversion triggered by PWM timer to read Vm when transistor is off
 // when motor is loaded, sometimes see motor short so that  bemf=offset voltage
 // get zero sometimes - open circuit brush? Hence try median filter
@@ -477,16 +492,25 @@ void pidSetControl()
    {  //pidobjs[0] : right side
 	// p_input has scaled velocity interpolation to make smoother
 	// p_state is [16].[16]
-        	pidObjs[j].p_error = pidObjs[j].p_input + (pidVel[j].interpolate >> 8)  - pidObjs[j].p_state;
+        	pidObjs[j].p_error = pidObjs[j].p_input + pidVel[j].interpolate  - pidObjs[j].p_state;
             pidObjs[j].v_error = pidObjs[j].v_input - pidObjs[j].v_state;  // v_input should be revs/sec
             //Update values
             UpdatePID(&(pidObjs[j]));
        } // end of for(j)
+
   /*** HACK tih uses channel+1, motor A and B swapped, A wired backwards ****/
-		if(pidObjs[j].onoff)
-		{ tiHSetDC(1, -pidObjs[1].output); 
+		if(pidObjs[0].onoff && pidObjs[1].onoff)  // both motors on to run
+		{
+#if HACK == 0
+ 		   tiHSetDC(1, pidObjs[0].output); 
+		   tiHSetDC(2, pidObjs[1].output); 
+#endif
+# if HACK ==1
+	 // change sign if motor is wired backwards...
+		tiHSetDC(1, -pidObjs[1].output); 
 		   tiHSetDC(2, pidObjs[0].output); 
-		}  // change sign if motor is wired backwards...
+#endif
+		} 
 		else // turn off motors if PID loop is off
 		{ tiHSetDC(1,0); tiHSetDC(2,0); }	
 }
@@ -500,7 +524,8 @@ void UpdatePID(pidPos *pid)
     // better check scale factors
 
     pid->preSat = pid->feedforward + pid->p +
-		 ((pid->i + pid->d) >> 4); // divide by 16
+		 ((pid->i ) >> 4) +  // divide by 16
+		(pid->d >> 4); // divide by 16
 	pid->output = pid->preSat;
  
 	pid-> i_error = (long)pid-> i_error + (long)pid->p_error; // integrate error

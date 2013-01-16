@@ -1,0 +1,3 @@
+python data-clean.py > Data/imudata.dat
+xmgrace -batch grace.cmd -nxy Data/imudata.dat
+

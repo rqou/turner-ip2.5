@@ -22,10 +22,12 @@ delay = 0.025
 RESET_ROBOT = False
 ##########################
 
-# motorgains = [200,2,0,2,0,    200,2,0,2,0]
+
 # [Kp Ki Kd Kanti-wind ff]
 # now uses back emf velocity as d term
-motorgains = [300,0,300,0,50, 300,0,300,0,50]
+#motorgains = [300,0,10,0,50, 300,0,10,0,50]
+# try just left motor
+motorgains = [400,0,400,0,0, 400,0,400,0,0]
 throttle = [0,0]
 duration = 512  # length of run
 cycle = 512 # ms for a leg cycle
@@ -35,7 +37,7 @@ cycle = 512 # ms for a leg cycle
 # [velocity increments]   
 delta = [0x4000,0x4000,0x4000,0x4000]  # adds up to 65536 (2 pi)
 intervals = [128, 128, 128, 128]  # total 512 ms
-vel = [64, 64,64,64]  # = delta/interval
+vel = [128, 128,128,128]  # = delta/interval
 
 
 ser = serial.Serial(shared.BS_COMPORT, shared.BS_BAUDRATE,timeout=3, rtscts=0)
@@ -107,7 +109,7 @@ def setVelProfile():
     print "Sending velocity profile"
     print "set points [encoder values]", delta
     print "intervals (ms)",intervals
-    print "velocities (<<8)",vel
+    print "velocities (delta per ms)",vel
     temp = intervals+delta+vel
     temp = temp+temp  # left = right
     xb_send(0, command.SET_VEL_PROFILE, pack('24h',*temp))
@@ -159,7 +161,7 @@ def getGain(lr):
             print 'not enough gain values'
             
 # execute move command
-count = 32
+count = 300 # 300 Hz sampling in steering = 1 sec
 
 def proceed():
     global duration, count, delay, throttle
@@ -221,7 +223,7 @@ def writeFileHeader(dataFileName):
     fileout.write('"%  intervals     = ' +repr(intervals) + '"\n')
     fileout.write('"% Columns: "\n')
     # order for wiring on RF Turner
-    fileout.write('"% time | Rlegs | Llegs | DCR | DCL | GyroX | GryoY | GryoZ | GryoZAvg | AX | AY | AZ | RBEMF | LBEMF "\n')
+    fileout.write('"% time | Rlegs | Llegs | DCR | DCL | GyroX | GryoY | GryoZ | GryoZAvg | AX | AY | AZ | RBEMF | LBEMF | VBAT "\n')
  #   fileout.write('"% time | Rlegs | Llegs | DCL | DCR | GyroX | GryoY | GryoZ | GryoZAvg | AX | AY | AZ | LBEMF | RBEMF | SteerOut"\n')
   #  fileout.write('time, Rlegs, Llegs, DCL, DCR, GyroX, GryoY, GryoZ, GryoZAvg, AX, AY, AZ, LBEMF, RBEMF, SteerOut\n')
     fileout.close()

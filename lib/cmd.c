@@ -7,11 +7,10 @@
 
 #include "cmd.h"
 #include "cmd_const.h"
+#include "cmd-motor.h"
 #include "dfmem.h"
 #include "utils.h"
 #include "ports.h"
-#include "gyro.h"
-#include "xl.h"
 #include "stopwatch.h"
 #include "led.h"
 #include "payload.h"
@@ -57,25 +56,20 @@ void cmdError(void);
 /*-----------------------------------------------------------------------------
  *          Declaration of static functions
 -----------------------------------------------------------------------------*/
-static void cmdSetThrust(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
+
 static void cmdSteer(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
 static void cmdGetImuData(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
 static void cmdGetImuLoop(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
-
 static void cmdStartImuDataSave(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
 static void cmdStopImuDataSave(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
 static void cmdTxSavedImuData(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
 static void cmdEraseMemSector(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
 
-//static void cmdEcho(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
 void cmdEcho(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
-
 static void cmdNop(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
 
 //User commands
 static void cmdSetThrustOpenLoop(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
-static void cmdSetThrustClosedLoop(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
-static void cmdSetPIDGains(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
 static void cmdGetPIDTelemetry(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
 static void cmdSetCtrldTurnRate(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
 static void cmdGetImuLoopZGyro(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
@@ -85,10 +79,16 @@ static void cmdSoftwareReset(unsigned char type, unsigned char status, unsigned 
 static void cmdSpecialTelemetry(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
 static void cmdEraseSector(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
 static void cmdFlashReadback(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
-static void cmdSetVelProfile(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
 static void cmdWhoAmI(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
 static void cmdStartTelemetry(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
-static void cmdZeroPos(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
+
+// commands defined in cmd-motor.c:
+//static void cmdSetThrust(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
+//static void cmdSetThrustClosedLoop(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
+//static void cmdSetPIDGains(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
+//static void cmdSetVelProfile(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
+//static void cmdZeroPos(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame);
+
 
 /*-----------------------------------------------------------------------------
  *          Public functions
@@ -212,6 +212,6 @@ static void cmdFlashReadback(unsigned char type, unsigned char status, unsigned 
 
 
 
-#include "cmd-motor.c"  // ZeroPos, SetThrust, SetVelProfile, SetPIDGains
+//#include "cmd-motor.c"  // ZeroPos, SetThrust, SetVelProfile, SetPIDGains
 #include "cmd-aux.c"   // auxiliary functions Echo, WhoAmI, Error
 #include "cmd-pt2.c"

@@ -71,18 +71,6 @@ void SetupCamera(void)
 }
 */
 
-void SetupI2C(void)
-{
-    unsigned int I2C1CONvalue, I2C1BRGvalue;
-    I2C1CONvalue = I2C1_ON & I2C1_IDLE_CON & I2C1_CLK_HLD &
-                   I2C1_IPMI_DIS & I2C1_7BIT_ADD & I2C1_SLW_DIS &
-                   I2C1_SM_DIS & I2C1_GCALL_DIS & I2C1_STR_DIS &
-                   I2C1_NACK & I2C1_ACK_DIS & I2C1_RCV_DIS &
-                   I2C1_STOP_DIS & I2C1_RESTART_DIS & I2C1_START_DIS;
-    I2C1BRGvalue = 363; // Fcy(1/Fscl - 1/1111111)-1
-    OpenI2C1(I2C1CONvalue, I2C1BRGvalue);
-    IdleI2C1();
-}
 
 void SetupInterrupts(void)
 {
@@ -139,41 +127,3 @@ void SetupUART2(void)
 
 unsigned int PTPERvalue=4999;
 
-void SetupPWM(void){
-
-   LATB  = 0x0000;
-   TRISB = 0b0000011011111011;
-
-   PORTBbits.RB8 = 0;
-   PORTBbits.RB11 = 0;
-
-   unsigned int SEVTCMPvalue, PTCONvalue, PWMCON1value, PWMCON2value;
-   SEVTCMPvalue = 160; //Special event compare register triggers special event
-   //SEVTCMPvalue = 4839; //Special event compare register triggers special event
-                        //at this point in the PWM period. Useful for sampling
-                        //back EMF when motor is turned off, for example.
-                        //Values larger than 4839 for a time base of 4999 give
-                        //unreliable results. Consequently, running the motor
-                        //at greater than 96.7% duty cycle means you cannot
-                        //sense back EMF.
-
-   PTCONvalue = PWM_EN & PWM_IDLE_CON & PWM_OP_SCALE1 &
-//                PWM_IPCLK_SCALE4 & PWM_MOD_FREE;
-                PWM_IPCLK_SCALE16 & PWM_MOD_FREE;
-   PWMCON1value = PWM_MOD1_IND & PWM_PEN1L & PWM_PEN1H &
-                  PWM_MOD2_IND & PWM_PEN2L & PWM_PEN2H &
-                  PWM_MOD3_IND & PWM_PEN3L & PWM_PEN3H;
-   PWMCON2value = PWM_SEVOPS1 & PWM_OSYNC_TCY & PWM_UEN;
-   ConfigIntMCPWM(PWM_INT_DIS & PWM_FLTA_DIS_INT & PWM_FLTB_DIS_INT);
-
-   OpenMCPWM(PTPERvalue, SEVTCMPvalue, PTCONvalue, PWMCON1value, PWMCON2value);
-   P1OVDCONbits.POVD1L = 1;
-   P1OVDCONbits.POVD1H = 1;
-   P1OVDCONbits.POVD2L = 1;
-   P1OVDCONbits.POVD2H = 1;
-   P1OVDCONbits.POVD3L = 1;
-   P1OVDCONbits.POVD3H = 1;
-   SetDCMCPWM(1, 0, 0);
-   SetDCMCPWM(2, 0, 0);
-   SetDCMCPWM(3, 0, 0);
-}

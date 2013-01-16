@@ -3,9 +3,9 @@
 
 typedef struct {
 		unsigned long timeStamp; 
-		int inputL;  
-		int inputR;
-		int dcL;
+		long posL;  	// Hall angle position
+		long posR;
+		int dcL;		// PWM duty cycle
 		int dcR;
 		int gyroX;
 		int gyroY;
@@ -16,6 +16,7 @@ typedef struct {
 		int accelZ;
 		int bemfL;
 		int bemfR;
+		int Vbatt; // battery voltage
 		int sOut;	
 	} telemStruct_t;
 
@@ -29,3 +30,4 @@ typedef union packedTelemUnion {
 void telemSaveSample(void);
 void telemFlashSample(telemU* data);
 void setSampleSaveCount(int count);
+void telemFlashReadback(unsigned int count);

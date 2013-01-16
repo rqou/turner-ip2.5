@@ -1,8 +1,22 @@
 /* basic motor control functions */
 
+#include "cmd.h"
+#include "cmd_const.h"
+#include "cmd-motor.h"
+#include "utils.h"
+#include "pid-ip2.5.h"
+#include "radio.h"
+#include "../MyConsts/radio_settings.h"
+#include "tiH.h"
+#include "timer.h"
+#include "telemetry.h"
+#include "stopwatch.h"
+
+extern pidPos pidObjs[NUM_PIDS];
+
 // set PWM values for short duration for each motor
 // throttle[0], throttle[1], duration
-static void cmdSetThrust(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame)
+void cmdSetThrust(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame)
  {	int thrust1 = frame[0] + (frame[1] << 8);
 	int thrust2 = frame[2] + (frame[3] << 8);
 	unsigned int run_time_ms = frame[4] + (frame[5] << 8);
@@ -29,7 +43,7 @@ void cmdZeroPos(unsigned char type, unsigned char status, unsigned char length, 
      pidZeroPos(0); pidZeroPos(1);
 }
 
-static void cmdSetThrustClosedLoop(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame)
+void cmdSetThrustClosedLoop(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame)
 {	int thrust1 = frame[0] + (frame[1] << 8);
 	unsigned int run_time_ms1 = frame[2] + (frame[3] << 8);
 	int thrust2 = frame[4] + (frame[5] << 8);
@@ -41,7 +55,7 @@ static void cmdSetThrustClosedLoop(unsigned char type, unsigned char status, uns
 	pidOn(1);
 }
 
-static void cmdSetPIDGains(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame){
+void cmdSetPIDGains(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame){
 	int Kp, Ki, Kd, Kaw, ff;
 	int idx = 0;
 
@@ -65,7 +79,7 @@ static void cmdSetPIDGains(unsigned char type, unsigned char status, unsigned ch
 
 
 // set up velocity profile structure  - assume 4 set points for now, generalize later
-static void cmdSetVelProfile(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame){
+void cmdSetVelProfile(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame){
 	int interval[NUM_VELS], delta[NUM_VELS], vel[NUM_VELS];
 	int idx = 0, i = 0;
 	for(i = 0; i < NUM_VELS; i ++)

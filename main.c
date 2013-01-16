@@ -35,6 +35,7 @@
 #include "pid-ip2.5.h"
 #include "steering.h"
 #include "consts.h"
+#include "adc_pid.h"
 
 Payload rx_payload;
 MacPacket rx_packet;
@@ -52,10 +53,9 @@ int main() {
     SetupPorts();
 
     SetupInterrupts();
-    //SetupI2C();
-    SetupADC();
-    SetupTimer1();
-    //SetupPWM();
+ //   SetupADC(); old A/D
+    adcSetup();   // DMA A/D
+//    SetupTimer1(); setup in pidSetup
     SetupTimer2();
     sclockSetup();
     mpuSetup();

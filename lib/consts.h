@@ -57,5 +57,5 @@
 
 //Motor PWM configuration parameters
 //#define PTPER_VALUE             4999 // = FCY / (F_pwm * time_base_input_prescaler) - 1 eg. 2kHz pwm = 40e6 / ((((PTPER_VALUE = 4999) + 1)) * 4X prescaler)
-#define PTPER_VALUE             624// = FCY / (F_pwm * time_base_input_prescaler) - 1 eg. 2kHz pwm = 40e6 / ((((PTPER_VALUE = 4999) + 1)) * 4X prescaler)
+//#define PTPER_VALUE             624// = FCY / (F_pwm * time_base_input_prescaler) - 1 eg. 2kHz pwm = 40e6 / ((((PTPER_VALUE = 4999) + 1)) * 4X prescaler)
 #endif
