@@ -40,7 +40,7 @@ unsigned char tx_frame_[127];
 extern MoveQueue moveq;
 extern int offsz;
 extern pidPos pidObjs[NUM_PIDS];
-extern TelemStruct TelemControl;
+extern TelemConStruct TelemControl;
 extern unsigned long t1_ticks;
 extern int samplesToSave;
 
@@ -188,7 +188,9 @@ static void cmdStartTelemetry(unsigned char type, unsigned char status, unsigned
        unsigned long temp;
      TelemControl.count = frame[idx] + (frame[idx+1] << 8); idx+=2;
    // start time is relative to current t1_ticks
+       CRITICAL_SECTION_START
 	temp = t1_ticks; // need atomic read due to interrupts
+	CRITICAL_SECTION_END
 	TelemControl.start = 
 		(unsigned long) (frame[idx] + (frame[idx+1] << 8) )
 						+ temp;

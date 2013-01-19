@@ -190,19 +190,23 @@ def flashReadback():
     shared.imudata = []  # reset imudata structure
     shared.pkts = 0  # reset packet count???
     xb_send(0, command.FLASH_READBACK, pack('=h',count))
-    # While waiting, write parameters to start of file
-    writeFileHeader(dataFileName)     
-    time.sleep(delay*count + 3)
+    time.sleep(delay*count + 7)
     while shared.pkts != count:
-        print "Retry"
+        print "\n Retry after 10 seconds. Got only %d packets" %shared.pkts
+        time.sleep(10)
         shared.imudata = []
         shared.pkts = 0
         xb_send(0, command.FLASH_READBACK, pack('=h',count))
-        time.sleep(delay*count + 3)
+        time.sleep(delay*count + 7)
         if shared.pkts > count:
             print "too many packets"
             break
+        if shared.pkts < count:
+            print "\n too few packets",str(shared.pkts)
+            break
     print "readback done"
+# While waiting, write parameters to start of file
+    writeFileHeader(dataFileName)     
     fileout = open(dataFileName, 'a')
     np.savetxt(fileout , np.array(shared.imudata), '%d', delimiter = ',')
     fileout.close()
@@ -223,7 +227,7 @@ def writeFileHeader(dataFileName):
     fileout.write('"%  intervals     = ' +repr(intervals) + '"\n')
     fileout.write('"% Columns: "\n')
     # order for wiring on RF Turner
-    fileout.write('"% time | Rlegs | Llegs | DCR | DCL | GyroX | GryoY | GryoZ | GryoZAvg | AX | AY | AZ | RBEMF | LBEMF | VBAT "\n')
+    fileout.write('"% time | LPos| RPos | LPWM | RPWM | GyroX | GryoY | GryoZ | GryoZAvg | AX | AY | AZ | RBEMF | LBEMF | VBAT "\n')
  #   fileout.write('"% time | Rlegs | Llegs | DCL | DCR | GyroX | GryoY | GryoZ | GryoZAvg | AX | AY | AZ | LBEMF | RBEMF | SteerOut"\n')
   #  fileout.write('time, Rlegs, Llegs, DCL, DCR, GyroX, GryoY, GryoZ, GryoZAvg, AX, AY, AZ, LBEMF, RBEMF, SteerOut\n')
     fileout.close()

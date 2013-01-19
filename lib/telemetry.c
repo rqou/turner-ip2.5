@@ -10,22 +10,26 @@
 #include "timer.h"
 #include "cmd.h"
 #include "adc_pid.h"
+#include "spi_controller.h"
+#include "blink.h"
 
 int samplesToSave;
 extern int gdata[3];
 extern int gyroAvg;
 extern int xldata[3];  // accelerometer data 
 extern int offsx, offsy, offsz;
+extern SpicStatus port_status[SPIC_NUM_PORTS];  
 
 // structure to keep track of telemetry recording
-TelemStruct TelemControl;
+TelemConStruct TelemControl;  // structure for telemetry control
 extern pidT steeringPID;
 extern pidPos pidObjs[NUM_PIDS];
 extern int bemf[NUM_PIDS];
 
 // record current state to telemU structure
-void telemSaveSample(void)
+void telemSaveSample(unsigned long sampIdx)
 {	telemU data;
+			data.telemStruct.sampleIndex = sampIdx;
 //Stopwatch was already started in the cmdSpecialTelemetry function
 			data.telemStruct.timeStamp = (long)swatchTic(); 
 
@@ -78,12 +82,19 @@ void telemFlashReadback(unsigned int count)
 	telemU data;
 	DisableIntT5;		// prevent MPU access to SPI2
 	for(sampNum = 0; sampNum < count; sampNum++)
-	{ dfmemReadSample(sampNum, sampLen, (unsigned char *) &data); 
+	{ dfmemReadSample(sampNum, sampLen, (unsigned char *) &data);
+	   if ((sampNum+1) != data.telemStruct.sampleIndex)
+		while(1) // hang here if bad read
+		{ blink_leds(1,200); }
 	   radioConfirmationPacket(RADIO_DEST_ADDR,
 						     CMD_SPECIAL_TELEMETRY, 
 						     status, sampLen, (unsigned char *) &data);  
-	delay_ms(25);	// slow down for XBee 57.6 K
+	// delay_ms(25);	// slow down for XBee 57.6 K
+	blink_leds(1,20); // wait 40 ms to give plenty of time to send packets
+	}
+	// wait for DMA to finish and release SPI2
+	while(port_status[1] == STAT_SPI_BUSY)
+	{ blink_leds(1,300);   // waste some time
 	}
 	EnableIntT5;
-	
 }

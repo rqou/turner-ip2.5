@@ -15,24 +15,24 @@ for i in range(1,7):
     print '#',r
 #get first numeric row
 r=filedata.next()
-#time, LPos, RPos, DCL, DCR, GyroX, GryoY, GryoZ, GryoZAvg
+#sample time, LPos, RPos, DCL, DCR, GyroX, GryoY, GryoZ, GryoZAvg
 # , AX, AY, AZ, LBEMF, RBEMF, VBatt SteerOut\n')
 row=map(int,r)  # convert string list to numbers
-t0=row[0]  # 
-print (row[0]-t0)/1000,
-print '%6.2f' % angleEncoder(row[1]),
+t0=row[1]  # 
+print (row[1]-t0)/1000,
 print '%6.2f' % angleEncoder(row[2]),
-for i in range(3,15):
-    print row[i],
+print '%6.2f' % angleEncoder(row[3]),
+for i in range(4,16):
+    print " %4d" % row[i],
 print ' '
 for r in filedata:
     row=map(int,r)
-    print (row[0]-t0)/1000,
+    print (row[1]-t0)/1000,
     # change angles to 2 pi range (so can see a whole cycle better)
-    print '%6.2f' % angleEncoder(row[1]),
     print '%6.2f' % angleEncoder(row[2]),
-    for i in range(3,15):
-        print " %d" % row[i],
+    print '%6.2f' % angleEncoder(row[3]),
+    for i in range(4,16):
+        print " %4d" % row[i],
     print ' '
 
     

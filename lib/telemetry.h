@@ -2,7 +2,8 @@
 /* since telemetry is called in steering.c */
 
 typedef struct {
-		unsigned long timeStamp; 
+		unsigned long sampleIndex;
+	       unsigned long timeStamp; 
 		long posL;  	// Hall angle position
 		long posR;
 		int dcL;		// PWM duty cycle
@@ -26,8 +27,17 @@ typedef union packedTelemUnion {
 } telemU;
 
 
+// telemetry control structure 
+typedef struct
+{	char onoff;				// telemetry recording enabled 
+	unsigned long start;	// recording start time   
+	int count;				// count of samples to record
+	int skip;				// samples to skip
+} TelemConStruct;
 
-void telemSaveSample(void);
+
+
+void telemSaveSample(unsigned long sampIdx);
 void telemFlashSample(telemU* data);
 void setSampleSaveCount(int count);
 void telemFlashReadback(unsigned int count);

@@ -65,14 +65,6 @@ typedef struct
 	int Kaw;  // anti-windup gain
 } pidPos;
 
-// telemetry control structure 
-typedef struct
-{	char onoff;				// telemetry recording enabled 
-	unsigned long start;	// recording start time   
-	int count;				// count of samples to record
-	int skip;				// samples to skip
-} TelemStruct;
-
 // structure for velocity control of leg cycle
 typedef struct
 { 

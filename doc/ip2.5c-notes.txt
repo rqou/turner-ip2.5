@@ -18,6 +18,13 @@ dfmem writing seems to take less time than steering servo.
 With 1 MHz SCLK (limit of mpu6000 from data sheet), get whole steering servo time of 
 100 us. dfmemsync takes 111 us.
 
+Duncan runs at faster clock: in mpu6000.c
+// Set up SCK frequency of 13.333Mhz for 40 MIPS
+    SPI_CON1bits.SPRE = 0b100; // Secondary prescale 3:1
+    SPI_CON1bits.PPRE = 0b11; // Primary prescale 1:1
+
+If there is a read error in telemetry readback, CPU will go into flashing LED error
+state until reset
 
 Analog to Digital Conversion
 ____________________________
@@ -37,7 +44,7 @@ _________________________
 
 K_EMF = A/D units per 2^16 * (rev/ms) (~43)
 
-Kd velocity gain is scaled by 256
+Kd velocity gain is scaled by 16
 
 
 

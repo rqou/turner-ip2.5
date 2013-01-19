@@ -21,7 +21,7 @@ int steeringIsOn;
 int telemSkip;
 
 // structure to keep track of telemetry recording
-extern TelemStruct TelemControl;
+extern TelemConStruct TelemControl;
 extern int samplesToSave;
 
 static int gyroWindow[GYRO_AVG_SAMPLES];
@@ -145,7 +145,8 @@ void __attribute__((interrupt, no_auto_psv)) _T5Interrupt(void)
 		{	if( telemSkip == 0)
 			{	if(samplesToSave > 0)
 				{samplesToSave--;
-				  telemSaveSample(); // save current sample
+				// save current smaple in FLASH
+				  telemSaveSample((unsigned long)(TelemControl.count - samplesToSave));
 				  telemSkip = TelemControl.skip;  // reset skip
 			  	 }
 				else  {TelemControl.onoff = 0;}	// turn off telemetry if no more counts
