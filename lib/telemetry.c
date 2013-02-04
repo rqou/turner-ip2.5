@@ -26,9 +26,54 @@ extern pidT steeringPID;
 extern pidPos pidObjs[NUM_PIDS];
 extern int bemf[NUM_PIDS];
 
+/* static struct piddata {
+    int output[NUM_PIDS];
+    unsigned int measurements[NUM_PIDS];
+	long p[2],i[2],d[2];
+} PIDTelemData;
+*/
+
+/* data structure for telemetry */
+telemU telemPIDdata;
+
+
+// store current PID info into structure. Used by telemSaveSample and CmdGetPIDTelemetry
+void telemGetPID(unsigned long sampIdx)
+{
+	telemPIDdata.telemStruct.sampleIndex = sampIdx;
+//Stopwatch was already started in the cmdSpecialTelemetry function
+	telemPIDdata.telemStruct.timeStamp = (long)swatchTic(); 
+
+// since T1 has higher priority, these state readings might get interrupted 
+	CRITICAL_SECTION_START  // need coherent sample without T1 int updates
+//  save Hall encoder position instead of commanded thrust
+		telemPIDdata.telemStruct.posL = pidObjs[0].p_state;
+		telemPIDdata.telemStruct.posR = pidObjs[1].p_state;
+	// save output instead of reading PWM (sync issue?)
+		telemPIDdata.telemStruct.dcL = pidObjs[0].output;	// left
+		telemPIDdata.telemStruct.dcR = pidObjs[1].output;	// right
+		telemPIDdata.telemStruct.bemfL = bemf[0];
+		telemPIDdata.telemStruct.bemfR = bemf[1];
+	CRITICAL_SECTION_END
+
+   		telemPIDdata.telemStruct.gyroX = gdata[0] - offsx;
+		telemPIDdata.telemStruct.gyroY = gdata[1] - offsy;
+		telemPIDdata.telemStruct.gyroZ = gdata[2] - offsz; 
+		telemPIDdata.telemStruct.gyroAvg = gyroAvg;
+		telemPIDdata.telemStruct.accelX = xldata[0];
+		telemPIDdata.telemStruct.accelY = xldata[1];
+		telemPIDdata.telemStruct.accelZ = xldata[2];
+		telemPIDdata.telemStruct.Vbatt = (int) adcGetVbatt();
+		telemPIDdata.telemStruct.sOut = steeringPID.output;
+		return;
+}
+
+
+
 // record current state to telemU structure
 void telemSaveSample(unsigned long sampIdx)
-{	telemU data;
+{	
+/* telemU data;
 			data.telemStruct.sampleIndex = sampIdx;
 //Stopwatch was already started in the cmdSpecialTelemetry function
 			data.telemStruct.timeStamp = (long)swatchTic(); 
@@ -38,8 +83,6 @@ void telemSaveSample(unsigned long sampIdx)
 //  save Hall encoder position instead of commanded thrust
 		data.telemStruct.posL = pidObjs[0].p_state;
 		data.telemStruct.posR = pidObjs[1].p_state;
-
-
 	// save output instead of reading PWM (sync issue?)
 			data.telemStruct.dcL = pidObjs[0].output;	// left
 			data.telemStruct.dcR = pidObjs[1].output;	// right
@@ -57,8 +100,10 @@ void telemSaveSample(unsigned long sampIdx)
 			data.telemStruct.accelZ = xldata[2];
 			data.telemStruct.Vbatt = (int) adcGetVbatt();
 			data.telemStruct.sOut = steeringPID.output;
+*/
+			telemGetPID(sampIdx);
 // inside T5 interrupt, so don't need to DisableIntT5
-			telemFlashSample(&data); 
+			telemFlashSample(&telemPIDdata); 
 }
 
 /// write telemetry sample to Flash memory
@@ -98,3 +143,4 @@ void telemFlashReadback(unsigned int count)
 	}
 	EnableIntT5;
 }
+

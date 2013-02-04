@@ -59,7 +59,7 @@ def setThrust():
 def menu():
     print "-------------------------------------"
     print "e: radio echo test    | g: right motor gains | h: Help menu"
-    print "f: flash readback     | l: left motor gains"
+    print "a: access PIDdata     | f: flash readback     | l: left motor gains"
     print "m: toggle memory mode | n: get robot name    | p: proceed"
     print "q: quit               | r: reset robot       | s: set throttle"
     print "t: time of move length| v: set velocity profile"
@@ -159,7 +159,17 @@ def getGain(lr):
                 motorgains[5:11] = motor
         else:
             print 'not enough gain values'
-            
+
+# get one packet of PID data from robot
+def getPIDdata():
+    shared.pkts = 0   # reset packet count     
+    xb_send(0, command.GET_PID_TELEMETRY, pack('h',0))
+    while shared.pkts == 0:
+        print "\n Retry after 1 seconds. Got only %d packets" %shared.pkts
+        time.sleep(1)
+    fileout = sys.stdout
+    np.savetxt(fileout, np.array(shared.imudata), '%d', delimiter = ',')
+        
 # execute move command
 count = 300 # 300 Hz sampling in steering = 1 sec
 
@@ -264,6 +274,8 @@ def main():
     while True:
         print '>',
         keypress = msvcrt.getch()
+        if keypress == 'a':
+            getPIDdata()
         if keypress == ' ':
             throttle = [0,0]
         elif keypress == 'c':

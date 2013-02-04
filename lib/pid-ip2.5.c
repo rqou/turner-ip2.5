@@ -64,11 +64,6 @@ int measLast1[NUM_PIDS];
 int measLast2[NUM_PIDS];
 int bemf[NUM_PIDS]; //used to store the true, unfiltered speed
 
-static struct piddata {
-    int output[NUM_PIDS];
-    unsigned int measurements[NUM_PIDS];
-	long p[2],i[2],d[2];
-} PIDTelemData;
 
 
 // -------------------------------------------
@@ -251,21 +246,6 @@ void pidZeroPos(int pid_num){
 	pidObjs[pid_num].v_input = 0;
 	pidVel[pid_num].leg_stride = 0; // strides also reset 
 	EnableIntT1; // turn on pid interrupts
-}
-
-// from cmdGetPIDTelemetry
-unsigned char* pidGetTelemetry(void){
-	PIDTelemData.output[0] = pidObjs[0].output;
-	PIDTelemData.output[1] = pidObjs[1].output;
-	PIDTelemData.measurements[0] = pidObjs[0].v_state;
-	PIDTelemData.measurements[1] = pidObjs[1].v_state;
-	PIDTelemData.p[0] = pidObjs[0].p;
-	PIDTelemData.p[1] = pidObjs[1].p;
-	PIDTelemData.i[0] = pidObjs[0].i;
-	PIDTelemData.i[1] = pidObjs[1].i;
-	PIDTelemData.d[0] = pidObjs[0].d;
-	PIDTelemData.d[1] = pidObjs[1].d;
-	return (unsigned char*)&PIDTelemData;
 }
 
 

@@ -13,6 +13,7 @@
 #include "ports.h"
 #include "stopwatch.h"
 #include "led.h"
+#include "blink.h"
 #include "payload.h"
 #include "mac_packet.h"
 #include "dfmem.h"
@@ -40,9 +41,11 @@ unsigned char tx_frame_[127];
 extern MoveQueue moveq;
 extern int offsz;
 extern pidPos pidObjs[NUM_PIDS];
+extern telemU telemPIDdata;
 extern TelemConStruct TelemControl;
 extern unsigned long t1_ticks;
 extern int samplesToSave;
+unsigned long packetNum = 0; // sequential packet number
 
 extern moveCmdT currentMove, idleMove, manualMove;
 // updated version string to identify robot
@@ -163,7 +166,7 @@ void cmdPushFunc(MacPacket rx_packet)
  *         User function
 -----------------------------------------------------------------------------*/
 /* keyboard_telem2.5.py uses , 
- * cmd.c: FLASH_READBACK, ERASE_SECTORS, START_TELEM, 
+ * cmd.c: FLASH_READBACK, ERASE_SECTORS, START_TELEM, GET_PID_TELEMETRY
 * cmd-motor.c: SET_PID_GAINS,  SET_THRUST, SET_VEL_PROFILE, ZERO_POS, SET_THRUST_CLOSED_LOOP
 *  cmd-aux.c: WHO_AM_I, ECHO, SOFTWARE_RESET
 */
@@ -201,6 +204,19 @@ static void cmdStartTelemetry(unsigned char type, unsigned char status, unsigned
 	if(TelemControl.count > 0) 
 	{ TelemControl.onoff = 1;   // use just steering servo sample capture
 	 } // enable telemetry last 
+}
+
+//send single radio packet with current PID state
+static void cmdGetPIDTelemetry(unsigned char type, unsigned char status, unsigned char length,
+								 unsigned char *frame)
+{ 	unsigned int sampLen = sizeof(telemStruct_t);
+	telemGetPID(packetNum);  // get current state
+	 radioConfirmationPacket(RADIO_DEST_ADDR,
+						     CMD_SPECIAL_TELEMETRY, 
+						     status, sampLen, (unsigned char *) &telemPIDdata);  
+	packetNum++;
+    // delay_ms(25);	// slow down for XBee 57.6 K
+	blink_leds(1,20); // wait 20 ms to give plenty of time to send packets
 }
 
 

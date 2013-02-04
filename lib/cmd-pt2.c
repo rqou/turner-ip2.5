@@ -265,51 +265,7 @@ static void cmdSteer(unsigned char type, unsigned char status, unsigned char len
 
 
 
-static void cmdGetPIDTelemetry(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame){
-	unsigned int count;
-	unsigned long tic;
-    unsigned char *tic_char = (unsigned char*)&tic;
-	//unsigned long sampNum = 0;
-	int i;
-	unsigned short idx = 0;
-	MacPacket packet; Payload pld;
-	unsigned char* telem_ptr;
 
-	count = frame[0] + (frame[1] << 8);
-	swatchReset();
-    tic = swatchTic();
-	
-	while(count){
-		pld = payCreateEmpty(36);  // data length = 12
-	
-		//*(long*)(pld->pld_data + idx) = tic;
-		pld->pld_data[2] = tic_char[0];
-        pld->pld_data[3] = tic_char[1];
-        pld->pld_data[4] = tic_char[2];
-        pld->pld_data[5] = tic_char[3];
-		idx += sizeof(tic);
-
-		telem_ptr = pidGetTelemetry();
-
-        
-		//memcpy((pld->pld_data)+idx , telem_ptr, 4*sizeof(int));
-		for(i = 0; i < (4*sizeof(int)+6*sizeof(long)); ++i) {
-            pld->pld_data[i+6] = telem_ptr[i];
-        }
-
-        pld->pld_data[0] = status;
-        pld->pld_data[1] = CMD_GET_PID_TELEMETRY;
-//        radioSendPayload(macGetDestAddr(), pld);
-      // Enqueue the packet for broadcast
-    	while(!radioEnqueueTxPacket(packet));
-
-	   count--;
-        //delay_ms(2);   // ~3ms delay
-        //delay_us(695);
-		delay_ms(10);
-        tic = swatchTic();
-	}
-}
 
 static void cmdSetCtrldTurnRate(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame){
 	int rate;
