@@ -162,13 +162,25 @@ def getGain(lr):
 
 # get one packet of PID data from robot
 def getPIDdata():
-    shared.pkts = 0   # reset packet count     
+    count = 0
+    shared.pkts = 0   # reset packet count
+    dummy_data = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    # data format '=LLll'+13*'h' 
+    shared.imudata = [] #reset stored data
     xb_send(0, command.GET_PID_TELEMETRY, pack('h',0))
+    time.sleep(0.2)
     while shared.pkts == 0:
         print "\n Retry after 1 seconds. Got only %d packets" %shared.pkts
         time.sleep(1)
-    fileout = sys.stdout
-    np.savetxt(fileout, np.array(shared.imudata), '%d', delimiter = ',')
+        count = count + 1
+        if count > 10:
+            print 'no return packet'
+            shared.imudata.append(dummy_data) # use dummy data
+            break   
+    data = shared.imudata[0]  # convert string list to numbers
+    print 'packet=', data
+    print 'index =', data[0]
+
         
 # execute move command
 count = 300 # 300 Hz sampling in steering = 1 sec
@@ -262,7 +274,9 @@ def main():
     time.sleep(0.5)  # wait for whoami before sending next command
     setVelProfile()
     throttle = [0,0]
-    tinc = 25;
+    tinc = 25
+    time.sleep(1)  # wait for other commands to get queued and processes
+    #getPIDdata()    # one read for debugging
     # time in milliseconds
    # duration = 42*16-1  # 21.3 gear ratio, 2 counts/motor rev
    # duration = 5*100 -1  # integer multiple of time steps
@@ -274,17 +288,17 @@ def main():
     while True:
         print '>',
         keypress = msvcrt.getch()
-        if keypress == 'a':
-            getPIDdata()
+        
         if keypress == ' ':
             throttle = [0,0]
+        elif keypress == 'a':
+            getPIDdata()
         elif keypress == 'c':
             throttle[0] = 0
         elif keypress == 'd':
             throttle[0] -= tinc
         elif keypress == 'e':
             xb_send(0, command.ECHO,  "Echo Test")
-            throttle[0] += tinc
         elif keypress == 'f':
             flashReadback()
         elif keypress == 'g':
