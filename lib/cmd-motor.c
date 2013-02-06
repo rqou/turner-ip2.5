@@ -23,8 +23,9 @@ void cmdSetThrust(unsigned char type, unsigned char status, unsigned char length
 
 	DisableIntT1;	// since PID interrupt overwrites PWM values
 // wiring was scrambled Jan. 9, 2013 on RSF velociRoACH robot
-  	tiHSetDC(1, -thrust2);
-	tiHSetDC(2, thrust1); 
+// unscramble Feb. 6, 2013
+  	tiHSetDC(1, thrust1);
+	tiHSetDC(2, thrust2); 
 	delay_ms(run_time_ms);
 	tiHSetDC(1,0);
 	tiHSetDC(2,0);

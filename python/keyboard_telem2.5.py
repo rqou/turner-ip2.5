@@ -29,7 +29,7 @@ RESET_ROBOT = False
 # try just left motor
 motorgains = [400,0,400,0,0, 400,0,400,0,0]
 throttle = [0,0]
-duration = 512  # length of run
+duration = [512,512]  # length of run
 cycle = 512 # ms for a leg cycle
 # velocity profile
 # [time intervals for setpoints]
@@ -178,16 +178,22 @@ def getPIDdata():
             shared.imudata.append(dummy_data) # use dummy data
             break   
     data = shared.imudata[0]  # convert string list to numbers
-    print 'packet=', data
+#    print 'packet=', data
     print 'index =', data[0]
+    print 'time = ', data[1]
+    print 'mpos=', data[2:4]
+    print 'pwm=',data[4:6]
+    print 'imu=',data[6:13]
+    print 'emf=',data[13:16]
 
         
 # execute move command
 count = 300 # 300 Hz sampling in steering = 1 sec
 
+# duration modified to allow running legs for differennt number of cycles
 def proceed():
     global duration, count, delay, throttle
-    thrust = [throttle[0], duration, throttle[1], duration, 0]
+    thrust = [throttle[0], duration[0], throttle[1], duration[1], 0]
     if telemetry:
         xb_send(0, command.ERASE_SECTORS, pack('h',0))
         print "started erase, 3 second dwell"
@@ -199,6 +205,7 @@ def proceed():
         raw_input("Press any key to send StartTelem...")
         xb_send(0, command.START_TELEM, pack('3h',*temp))
         time.sleep(0.1)
+    print "thrust =" + str(thrust)
     xb_send(0, command.SET_THRUST_CLOSED_LOOP, pack('5h',*thrust))
     print "Throttle = ",throttle,"duration =", duration
     time.sleep(0.1)
@@ -326,8 +333,11 @@ def main():
             throttle[1]= int(raw_input())
             print "new throttle =", throttle
         elif keypress == 't':
-            print 'cycle='+str(cycle)+' duration='+str(duration)+'. New duration:',
-            duration = int(raw_input())
+            print 'cycle='+str(cycle)+' duration='+str(duration)+\
+                     '. New duration[0]:',
+            duration[0] = int(raw_input())
+            print 'duration[1]:',
+            duration[1] = int(raw_input())
         elif keypress =='v':
             getVelProfile()
             setVelProfile()           

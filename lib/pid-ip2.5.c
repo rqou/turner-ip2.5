@@ -196,9 +196,11 @@ unsigned long temp;
 	measLast1[pid_num] =input_val;
 	measLast2[pid_num] =input_val;
 	temp = t1_ticks;  // need atomic read due to interrupt 
-	lastMoveTime = temp + (unsigned long) run_time;  // only one run time for both sides
-	// set initial time for next move set point
-  
+
+	if ((temp + (unsigned long) run_time) > lastMoveTime)
+	{ lastMoveTime = temp + (unsigned long) run_time; }  // set run time to max requested time
+
+// set initial time for next move set point 
 /*   need to set index =0 initial values */
 /* position setpoints start at 0 (index=0), then interpolate until setpoint 1 (index =1), etc */
 	pidVel[pid_num].expire = temp + (long) pidVel[pid_num].interval[0];   // end of first interval
@@ -315,58 +317,55 @@ void EmergencyStop(void)
 /*****************************************************************************************/
 /*****************************************************************************************/
 
+/* update setpoint  only leg which has run_time + start_time > t1_ticks */
+/* turn off when all PIDs have finished */
 void __attribute__((interrupt, no_auto_psv)) _T1Interrupt(void) 
-{
+{ int j;
 //  unsigned long time_start, time_end; 
 //	time_start =  swatchTic(); 
 
     if (t1_ticks == T1_MAX) t1_ticks = 0;
     t1_ticks++;
-	
-	if(t1_ticks > lastMoveTime) // turn off if done running
-	{ //	pidSetInput(0, 0, 0);    don't reset state when done run, keep for recording telemetry
-		pidObjs[0].onoff = 0;
-	//	pidSetInput(1, 0, 0);
+    pidGetState();	// always update state, even if motor is coasting
+ // only update tracking setpoint if time has not yet expired
+	for (j = 0; j< NUM_PIDS; j++)
+   	{     if ((pidObjs[j].start_time + pidObjs[j].run_time) >=  t1_ticks)
+		{ pidGetSetpoint(j);  }  // only update setpoint if still in run time
+   	}
+
+	if(t1_ticks > lastMoveTime) // turn off if done running all legs
+   	{	pidObjs[0].onoff = 0;
 		pidObjs[1].onoff = 0;
-	}
-	else 		// update velocity setpoints if needed - only when running
-	{ pidGetSetpoint();}
+   	}  
 
-	pidGetState();
-
-       pidSetControl();
-/* better read telemetry at slower tick rate - updated by steering servo */
-
+	pidSetControl();	// run control even if not updating setpoint to hold position 
 //	time_end =  swatchToc();
     //Clear Timer1 interrupt flag
     _T1IF = 0;
 }
 
+// update desired velocity and position tracking setpoints for each leg
+void pidGetSetpoint(int j)
+{ int index; long temp_v;
+		index = pidVel[j].index;		
+		// update desired position between setpoints, scaled by 256
+		pidVel[j].interpolate += pidVel[j].vel[index];
 
-void pidGetSetpoint()
-{ int j, index; long temp_v;
-
-	 for(j=0; j < NUM_PIDS; j++)
-		{  	index = pidVel[j].index;		
-			// update desired position between setpoints, scaled by 256
-			pidVel[j].interpolate += pidVel[j].vel[index];
-
-			if (t1_ticks >= pidVel[j].expire)  // time to reach previous setpoint has passed
-			{ 	pidVel[j].interpolate = 0;	
-				pidObjs[j].p_input += pidVel[j].delta[index];	//update to next set point
-				pidVel[j].expire += pidVel[j].interval[index];  // expire time for next interval
-				temp_v = ((long)pidVel[j].vel[index] * K_EMF)>>8;  // scale velocity to A/D units
-			       pidObjs[j].v_input = (int)(temp_v);	  //update to next velocity 
-			
-				// got to next index point	
-				pidVel[j].index++;
-				if (pidVel[j].index >= NUM_VELS) 
-				{     pidVel[j].index = 0;
-					pidVel[j].leg_stride++;  // one full leg revolution
+	if (t1_ticks >= pidVel[j].expire)  // time to reach previous setpoint has passed
+	{ 	pidVel[j].interpolate = 0;	
+			pidObjs[j].p_input += pidVel[j].delta[index];	//update to next set point
+			pidVel[j].expire += pidVel[j].interval[index];  // expire time for next interval
+			temp_v = ((long)pidVel[j].vel[index] * K_EMF)>>8;  // scale velocity to A/D units
+		       pidObjs[j].v_input = (int)(temp_v);	  //update to next velocity 
+		
+			// got to next index point	
+			pidVel[j].index++;
+			if (pidVel[j].index >= NUM_VELS) 
+			{     pidVel[j].index = 0;
+				pidVel[j].leg_stride++;  // one full leg revolution
 	/**** maybe need to handle round off in position set point ***/
-				}  // loop on index
-			}
-		}
+			}  // loop on index
+	}
 }
 
  // select either back emf or backwd diff for vel est
@@ -378,20 +377,11 @@ void pidGetState()
 // get diff amp offset with motor off at startup time
 	if(calib_flag)
 	{ 	
-// mis wired motor
-#define HACK 0  
-#if HACK == 0 
 		offsetAccumulatorL += adcGetMotorA();  
 		offsetAccumulatorR += adcGetMotorB();   
-#endif
-#if HACK == 1 // swapped motor A,B
-		offsetAccumulatorL += adcGetMotorB();  
-		offsetAccumulatorR += adcGetMotorA();   // statically, doesn't matter motor turn direction...
-#endif
 		offsetAccumulatorCounter++; 	}
- // choose velocity estimate  
-
-
+ 
+// choose velocity estimate  
 #if VEL_BEMF == 0    // use first difference on position for velocity estimate
 	for(i=0; i<NUM_PIDS; i++)
 	{ oldpos[i] = pidObjs[i].p_state; }
@@ -421,16 +411,9 @@ void pidGetState()
 #if VEL_BEMF == 1
 int measurements[NUM_PIDS];
 // Battery: AN0, MotorA AN8, MotorB AN9, MotorC AN10, MotorD AN11
- /*** HACK tih uses channel+1, motor A and B swapped, A wired backwards ****/
-
-#if HACK == 0 
 	measurements[0] = pidObjs[0].inputOffset - adcGetMotorA(); // watch sign for A/D? unsigned int -> signed?
      	measurements[1] = pidObjs[1].inputOffset - adcGetMotorB(); // MotorB
-#endif
-#if HACK == 1 // swapped motor A,B
-	measurements[0] = pidObjs[0].inputOffset - adcGetMotorB(); // watch sign for A/D? unsigned int -> signed?
-     	measurements[1] = -(pidObjs[1].inputOffset - adcGetMotorA()); // backwds MotorA
-#endif
+
 	
 //Get motor speed reading on every interrupt - A/D conversion triggered by PWM timer to read Vm when transistor is off
 // when motor is loaded, sometimes see motor short so that  bemf=offset voltage
@@ -478,18 +461,10 @@ void pidSetControl()
             UpdatePID(&(pidObjs[j]));
        } // end of for(j)
 
-  /*** HACK tih uses channel+1, motor A and B swapped, A wired backwards ****/
 		if(pidObjs[0].onoff && pidObjs[1].onoff)  // both motors on to run
 		{
-#if HACK == 0
  		   tiHSetDC(1, pidObjs[0].output); 
 		   tiHSetDC(2, pidObjs[1].output); 
-#endif
-# if HACK ==1
-	 // change sign if motor is wired backwards...
-		tiHSetDC(1, -pidObjs[1].output); 
-		   tiHSetDC(2, pidObjs[0].output); 
-#endif
 		} 
 		else // turn off motors if PID loop is off
 		{ tiHSetDC(1,0); tiHSetDC(2,0); }	
