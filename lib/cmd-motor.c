@@ -7,7 +7,7 @@
 #include "pid-ip2.5.h"
 #include "radio.h"
 #include "../MyConsts/radio_settings.h"
-#include "tiH.h"
+#include "tih.h"
 #include "timer.h"
 #include "telemetry.h"
 #include "stopwatch.h"

@@ -26,7 +26,7 @@
 #include "queue.h"
 #include "version.h"
 #include "../MyConsts/radio_settings.h"
-#include "tiH.h"
+#include "tih.h"
 #include "timer.h"
 #include "telemetry.h"
 
