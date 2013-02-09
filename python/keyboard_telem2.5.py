@@ -1,7 +1,39 @@
 # Keyboard control with hall effect sensing and telemetry
 # updated for IP2.5 and AMS Hall angle sensor Jan. 2013
 # treat encoder angle as 16 bits 0 ... 2pi (really 14 bits)
-import msvcrt, sys
+
+#TODO(rqou): clean up/split out into helper file?
+try:
+    # On Windows, use msvcrt to handle keyboard
+    import msvcrt
+    def setup_keyboard():
+        pass
+    def flush_keyboard_keys():
+        while msvcrt.kbhit():
+            ch = msvcrt.getch()
+    def get_keyboard_key():
+        return msvcrt.getch()
+except:
+    # On Linux, use tcsetattr magic to handle keyboard
+    import tty, termios, sys, select, atexit
+    old_terminal_settings = None
+    def setup_keyboard():
+        global old_terminal_settings
+        old_terminal_settings = termios.tcgetattr(sys.stdin.fileno())
+        tty.setcbreak(sys.stdin.fileno())
+        atexit.register(cleanup_keyboard)
+    def flush_keyboard_keys():
+        # The select call checks for the presence of data
+        while select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], []):
+            sys.stdin.read(1)
+            print("foo")
+    def get_keyboard_key():
+        return sys.stdin.read(1)
+    def cleanup_keyboard():
+        fd = sys.stdin.fileno()
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_terminal_settings)
+
+import sys
 import numpy as np
 from lib import command
 from struct import *
@@ -11,7 +43,7 @@ import serial
 from callbackFunc import xbee_received
 import shared
 
-DEST_ADDR = '\x20\x52'
+DEST_ADDR = '\x21\x12'
 imudata_file_name = 'imudata.txt'
 telemetry = False
 imudata = []
@@ -233,6 +265,7 @@ def writeFileHeader(dataFileName):
     fileout.close()
     
 def main():
+    setup_keyboard()
     print 'keyboard_telem for IP2.5c Jan. 2013\n'
     global throttle, duration, telemetry, dataFileName
     dataFileName = 'Data/imudata.txt'
@@ -258,12 +291,11 @@ def main():
    # duration = 5*100 -1  # integer multiple of time steps
 
     #blank out any keypresses leading in...
-    while msvcrt.kbhit():
-        ch = msvcrt.getch()
+    flush_keyboard_keys()
     menu()
     while True:
         print '>',
-        keypress = msvcrt.getch()
+        keypress = get_keyboard_key()
         if keypress == ' ':
             throttle = [0,0]
         elif keypress == 'c':
