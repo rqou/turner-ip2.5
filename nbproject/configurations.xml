@@ -34,9 +34,9 @@
         <itemPath>../imageproc-lib/i2c_driver.h</itemPath>
         <itemPath>../imageproc-lib/sclock.h</itemPath>
         <itemPath>../imageproc-lib/led.h</itemPath>
-        <itemPath>../imageproc-lib/at86rf231_driver.h</itemPath>
-        <itemPath>../imageproc-lib/ppool.h</itemPath>
         <itemPath>../imageproc-lib/version-string.h</itemPath>
+        <itemPath>../imageproc-lib/at86rf.h</itemPath>
+        <itemPath>../imageproc-lib/ipspi1.h</itemPath>
       </logicalFolder>
       <logicalFolder name="lib" displayName="lib" projectFiles="true">
         <itemPath>lib/init.h</itemPath>
@@ -89,10 +89,9 @@
         <itemPath>../imageproc-lib/blink.c</itemPath>
         <itemPath>../imageproc-lib/carray.c</itemPath>
         <itemPath>../imageproc-lib/sclock.c</itemPath>
-        <itemPath>../imageproc-lib/at86rf231_driver.c</itemPath>
-        <itemPath>../imageproc-lib/mac_packet.c</itemPath>
-        <itemPath>../imageproc-lib/ppool.c</itemPath>
         <itemPath>../imageproc-lib/memory.s</itemPath>
+        <itemPath>../imageproc-lib/at86rf.c</itemPath>
+        <itemPath>../imageproc-lib/ipspi1.c</itemPath>
       </logicalFolder>
       <logicalFolder name="lib" displayName="lib" projectFiles="true">
         <itemPath>lib/init.c</itemPath>

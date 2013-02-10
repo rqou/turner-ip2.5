@@ -87,7 +87,7 @@ unsigned char test_radio(unsigned char type, unsigned char status,\
     // Get a new packet from the pool
     packet = radioRequestPacket(length);
     if(packet == NULL) return 0;
-    macSetDestAddr(packet, RADIO_DEST_ADDR);
+    //macSetDestAddr(RADIO_DEST_ADDR);
 
     // Prepare the payload
     pld = packet->payload;
@@ -96,7 +96,7 @@ unsigned char test_radio(unsigned char type, unsigned char status,\
     paySetData(pld, length, data);
 
     // Enqueue the packet for broadcast
-    while(!radioEnqueueTxPacket(packet));
+    radioEnqueueTxPacket(packet);
 
     return 1; //success
 }
@@ -121,7 +121,7 @@ unsigned char test_gyro(unsigned char type, unsigned char status,\
     // Get a new packet from the pool
     	packet = radioRequestPacket(sizeof(mpu_data));
     	if(packet == NULL) return 0;
-    	macSetDestAddr(packet, RADIO_DEST_ADDR);
+    	//macSetDestAddr(RADIO_DEST_ADDR);
 
      // Prepare the payload
      	pld = packet->payload;
@@ -132,7 +132,7 @@ unsigned char test_gyro(unsigned char type, unsigned char status,\
 	memcpy(payGetData(pld), & mpu_data, sizeof(mpu_data)); // copy gyro data to packet
 
    	// Enqueue the packet for broadcast
-  	while(!radioEnqueueTxPacket(packet));
+  	radioEnqueueTxPacket(packet);
       return 1; //success
 }
 
@@ -158,7 +158,7 @@ unsigned char test_hall(unsigned char type, unsigned char status,\
     // Get a new packet from the pool
     packet = radioRequestPacket(sizeof(encPos));
     if(packet == NULL) return 0;
-    macSetDestAddr(packet, RADIO_DEST_ADDR);
+    //macSetDestAddr( RADIO_DEST_ADDR);
 
    // Prepare the payload
     pld = packet->payload;
@@ -169,7 +169,7 @@ unsigned char test_hall(unsigned char type, unsigned char status,\
 	memcpy(payGetData(pld),  & encPos, sizeof(encPos)); // copy Hall data to packet
 
    // Enqueue the packet for broadcast
-    while(!radioEnqueueTxPacket(packet));
+    radioEnqueueTxPacket(packet);
   
     return 1; //success
 }
@@ -253,7 +253,7 @@ unsigned char test_dflash(unsigned char type, unsigned char status,
     // Get a new packet from the pool
     packet = radioRequestPacket(strlen(str1));
     if(packet == NULL) return 0;
-    macSetDestAddr(packet, RADIO_DEST_ADDR);
+    //macSetDestAddr(packet, RADIO_DEST_ADDR);
 
     // Prepare the payload
     pld = packet->payload;
@@ -264,13 +264,13 @@ unsigned char test_dflash(unsigned char type, unsigned char status,
     dfmemRead(page, 0, strlen(str1), payGetData(pld));
 
     // Enqueue the packet for broadcast
-    while(!radioEnqueueTxPacket(packet));
+    radioEnqueueTxPacket(packet);
 
     // ---------- string 2 -----------------------------------------------------
     // Get a new packet from the pool
     packet = radioRequestPacket(strlen(str2));
     if(packet == NULL) return 0;
-    macSetDestAddr(packet, RADIO_DEST_ADDR);
+    //macSetDestAddr(packet, RADIO_DEST_ADDR);
 
     // Prepare the payload
     pld = packet->payload;
@@ -281,13 +281,13 @@ unsigned char test_dflash(unsigned char type, unsigned char status,
     dfmemRead(page, strlen(str1), strlen(str2), payGetData(pld));
 
     // Enqueue the packet for broadcast
-    while(!radioEnqueueTxPacket(packet));
+    radioEnqueueTxPacket(packet);
 
     // ---------- string 3 -----------------------------------------------------
     // Get a new packet from the pool
     packet = radioRequestPacket(strlen(str3));
     if(packet == NULL) return 0;
-    macSetDestAddr(packet, RADIO_DEST_ADDR);
+    //macSetDestAddr(packet, RADIO_DEST_ADDR);
 
     // Prepare the payload
     pld = packet->payload;
@@ -299,13 +299,13 @@ unsigned char test_dflash(unsigned char type, unsigned char status,
             payGetData(pld));
 
     // Enqueue the packet for broadcast
-    while(!radioEnqueueTxPacket(packet));
+    radioEnqueueTxPacket(packet);
 
     // ---------- string 4 -----------------------------------------------------
     // Get a new packet from the pool
     packet = radioRequestPacket(strlen(str4));
     if(packet == NULL) return 0;
-    macSetDestAddr(packet, RADIO_DEST_ADDR);
+    //macSetDestAddr(packet, RADIO_DEST_ADDR);
 
     // Prepare the payload
     pld = packet->payload;
@@ -317,7 +317,7 @@ unsigned char test_dflash(unsigned char type, unsigned char status,
             payGetData(pld));
 
     // Enqueue the packet for broadcast
-    while(!radioEnqueueTxPacket(packet));
+    radioEnqueueTxPacket(packet);
 
     return 1; //success
 }
@@ -351,7 +351,7 @@ unsigned char test_motor(unsigned char type, unsigned char status, \
   // Get a new packet from the pool
     packet = radioRequestPacket(sizeof(ack_string));
     if(packet == NULL) return 0;
-    macSetDestAddr(packet, RADIO_DEST_ADDR);
+    //macSetDestAddr(packet, RADIO_DEST_ADDR);
 
    // Prepare the payload
     pld = packet->payload;
@@ -361,7 +361,7 @@ unsigned char test_motor(unsigned char type, unsigned char status, \
 	memcpy(payGetData(pld),  & ack_string, sizeof(ack_string)); // copy ack_string to packet
 
    // Enqueue the packet for broadcast
-    while(!radioEnqueueTxPacket(packet));
+    radioEnqueueTxPacket(packet);
   
       return 1; //success
 } 

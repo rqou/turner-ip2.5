@@ -47,7 +47,7 @@ void __attribute__((interrupt, no_auto_psv)) _T2Interrupt(void)
 //    Payload rx_payload;
 //	char *temp;
 
-    if (!radioRxQueueEmpty())
+    if (0/*!radioRxQueueEmpty()*/)
     {
         // Check for unprocessed packet
         rx_packet = radioDequeueRxPacket();
@@ -79,6 +79,6 @@ void setupTimer6(unsigned int fs) {
 }
 
 void __attribute__((interrupt, no_auto_psv)) _T6Interrupt(void) {
-    radioProcess();
+    //radioProcess();
     _T6IF = 0;
 }

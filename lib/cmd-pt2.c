@@ -216,7 +216,7 @@ static void cmdSetSteeringGains(unsigned char type, unsigned char status, unsign
 // ip2.5c radio command:
 
     // Enqueue the packet for broadcast
-    while(!radioEnqueueTxPacket(packet));
+    radioEnqueueTxPacket(packet);
 }
 
 static void cmdSetThrustOpenLoop(unsigned char type, unsigned char status, unsigned char length, unsigned char *frame){
@@ -301,7 +301,7 @@ static void cmdGetPIDTelemetry(unsigned char type, unsigned char status, unsigne
         pld->pld_data[1] = CMD_GET_PID_TELEMETRY;
 //        radioSendPayload(macGetDestAddr(), pld);
       // Enqueue the packet for broadcast
-    	while(!radioEnqueueTxPacket(packet));
+    	radioEnqueueTxPacket(packet);
 
 	   count--;
         //delay_ms(2);   // ~3ms delay
@@ -327,7 +327,7 @@ static void cmdSetCtrldTurnRate(unsigned char type, unsigned char status, unsign
 // ip2.5c radio command:
 
     // Enqueue the packet for broadcast
-    while(!radioEnqueueTxPacket(packet));
+    radioEnqueueTxPacket(packet);
 }
 
 

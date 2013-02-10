@@ -134,7 +134,7 @@ void cmdSetup(void) {
 void cmdPushFunc(MacPacket rx_packet)
 {   Payload rx_payload;
     unsigned char command, status;  
-	 rx_payload = macGetPayload(rx_packet);
+	 rx_payload = 0;/*macGetPayload(rx_packet);*/
 	 
 	 Test* test = (Test*) malloc(sizeof(Test));
         if(!test) return;

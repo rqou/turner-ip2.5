@@ -59,17 +59,17 @@ int main() {
     SetupTimer2();
     sclockSetup();
     mpuSetup();
-    amsHallSetup();
+    //amsHallSetup();
     dfmemSetup(); 
     tiHSetup();   // set up H bridge drivers
 	cmdSetup();  // setup command table
 	pidSetup();  // setup PID control
 
     // Radio setup
-    radioInit(RADIO_RXPQ_MAX_SIZE, RADIO_TXPQ_MAX_SIZE);
-    radioSetChannel(RADIO_MY_CHAN);
-    radioSetSrcAddr(RADIO_SRC_ADDR);
-    radioSetSrcPanID(RADIO_PAN_ID);
+    //radioInit(RADIO_RXPQ_MAX_SIZE, RADIO_TXPQ_MAX_SIZE);
+    //radioSetChannel(RADIO_MY_CHAN);
+    //radioSetSrcAddr(RADIO_SRC_ADDR);
+    //radioSetSrcPanID(RADIO_PAN_ID);
     setupTimer6(RADIO_FCY); // Radio and buffer loop timer
 /**** set up steering last - so dfmem can finish ****/
 	steeringSetup(); // steering and Timer5 Int 
@@ -89,13 +89,13 @@ int main() {
         while(!queueIsEmpty(fun_queue))
         {
             test = queuePop(fun_queue);
-            rx_payload = macGetPayload(test->packet);
+            //rx_payload = macGetPayload(test->packet);
             tf = test->tf;
             (*tf)(payGetType(rx_payload),   // old commands don't use packet type
                     payGetStatus(rx_payload), 
 			  payGetDataLength(rx_payload), 
                     payGetData(rx_payload));
-            radioReturnPacket(test->packet);
+            //radioReturnPacket(test->packet);
             free(test);
         }
     }
